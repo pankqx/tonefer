@@ -1,0 +1,4 @@
+aiohttp>=3.9
+pynacl>=1.5
+qrcode>=7.4
+psutil>=5.9
