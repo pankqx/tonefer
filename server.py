@@ -279,6 +279,9 @@ class Tonefer:
             await self.announce_presence()
         return ws
 
+    async def phone_ping(self, request):
+        return web.json_response({"ok": True, "version": VERSION})
+
     async def phone_upload(self, request):
         if request.content_length and request.content_length > MAX_FILE + 1024:
             raise web.HTTPRequestEntityTooLarge(MAX_FILE, request.content_length)
@@ -407,6 +410,7 @@ class Tonefer:
         r = app.router
         r.add_get("/", self.phone_index)
         r.add_get("/ws", self.phone_ws)
+        r.add_get("/api/ping", self.phone_ping)
         r.add_post("/api/upload", self.phone_upload)
         r.add_get("/api/file/{id}", self.phone_file)
         r.add_get("/desk", self.desk_index)

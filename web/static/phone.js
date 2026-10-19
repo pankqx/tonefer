@@ -170,7 +170,7 @@
   // before the socket opens; detect that so we don't retry forever.
   async function checkPaired() {
     try {
-      const r = await fetch("/api/file/_", { headers: { "X-Tonefer-Token": token } });
+      const r = await fetch("/api/ping", { headers: { "X-Tonefer-Token": token } });
       if (r.status === 401) { unpair(); return false; }
     } catch (_) {}
     return true;
@@ -238,6 +238,9 @@
   $("viewerSave").onclick = () => opts.download(viewing);
   $("viewerClose").onclick = () => $("viewer").classList.remove("open");
   $("viewer").onclick = (e) => { if (e.target === $("viewer")) $("viewer").classList.remove("open"); };
+
+  // A new pairing link opened in an already-open tab only changes the hash.
+  window.addEventListener("hashchange", () => { if (/k=/.test(location.hash)) location.reload(); });
 
   // ---------------- boot ----------------
   $("attach").innerHTML = ICONS.plus;
