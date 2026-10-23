@@ -1,0 +1,154 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  ubuntu:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build .deb
+        run: ./packaging/build-deb.sh
+      - name: Install it like a user would
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ./dist/tonefer_*_all.deb xvfb imagemagick dbus-x11 >/dev/null
+          dpkg -s tonefer | grep -E "Status|Version"
+          systemctl --global is-enabled tonefer.service
+      - name: Server serves the laptop view
+        run: |
+          python3 /opt/tonefer/server.py --no-browser > server.log 2>&1 &
+          for i in $(seq 1 30); do curl -fs -o /dev/null http://127.0.0.1:8765/desk && break; sleep 0.5; done
+          curl -fs http://127.0.0.1:8765/desk | grep -q "Transfers"
+      - name: App window opens (screenshot)
+        env:
+          WEBKIT_DISABLE_COMPOSITING_MODE: "1"
+        run: |
+          mkdir -p shots
+          timeout 90 xvfb-run -a -s "-screen 0 1440x900x24" bash -c '
+            tonefer > app.log 2>&1 &
+            APP=$!
+            sleep 10; import -window root shots/ubuntu-app.png
+            kill $APP 2>/dev/null; wait $APP 2>/dev/null; true'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deb
+          path: dist/*.deb
+      - name: Publish CI output
+        if: always()
+        run: |
+          mkdir -p ci-out && cp -r shots ci-out/ 2>/dev/null || true
+          cp server.log app.log ci-out/ 2>/dev/null || true
+          cd ci-out && echo "run ${{ github.run_number }} · ${{ github.sha }} · ${{ job.status }}" > STATUS.txt
+          git init -q && git checkout -q -b ci-output && git add -A
+          git -c user.name=pankqx -c user.email=pankqx@gmail.com commit -qm "Ubuntu CI output ${{ github.run_number }}"
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" ci-output
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build Tonefer.exe
+        run: |
+          python -m pip install -q aiohttp pynacl qrcode psutil pystray pillow pyinstaller
+          python packaging/windows/make_icon.py
+          pyinstaller --noconfirm --windowed --name Tonefer --icon build/tonefer.ico `
+            --paths . --add-data "web;web" --add-data "VERSION;." `
+            --hidden-import netinfo --hidden-import pystray._win32 --collect-submodules qrcode `
+            desktop/tonefer_win.py
+          Get-ChildItem dist\Tonefer | Select-Object -First 5
+      - name: Build installer
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress | Out-Null }
+          $version = (Get-Content VERSION -Raw).Trim()
+          & $iscc "/DAppVersion=$version" packaging\windows\tonefer.iss
+          Compress-Archive -Path dist\Tonefer\* -DestinationPath dist\Tonefer-portable.zip
+          Get-ChildItem dist
+      - name: Install silently and test
+        run: |
+          New-Item -ItemType Directory -Force shots | Out-Null
+          Start-Process dist\ToneferSetup.exe -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /TASKS=startup" -Wait
+          $exe = "${env:ProgramFiles}\Tonefer\Tonefer.exe"
+          if (-not (Test-Path $exe)) { throw "Tonefer.exe not installed" }
+          Start-Process $exe -ArgumentList "--background"
+          $ok = $false
+          for ($i = 0; $i -lt 40; $i++) {
+            try { $r = Invoke-WebRequest http://127.0.0.1:8765/desk -UseBasicParsing -TimeoutSec 2; if ($r.Content -match "Transfers") { $ok = $true; break } } catch {}
+            Start-Sleep -Milliseconds 500
+          }
+          if (-not $ok) { throw "Server did not start" }
+          "server ok"
+          netsh advfirewall firewall show rule name="Tonefer" | Select-String "Enabled|Profiles"
+          Start-Process $exe
+          Start-Sleep -Seconds 12
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+          $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+          $g = [System.Drawing.Graphics]::FromImage($bmp)
+          $g.CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
+          $bmp.Save("shots\windows-app.png", [System.Drawing.Imaging.ImageFormat]::Png)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            dist/ToneferSetup.exe
+            dist/Tonefer-portable.zip
+      - name: Publish CI output
+        if: always()
+        run: |
+          New-Item -ItemType Directory -Force ci-out | Out-Null
+          Copy-Item -Recurse shots ci-out\ -ErrorAction SilentlyContinue
+          "run ${{ github.run_number }} · ${{ github.sha }} · ${{ job.status }}" | Out-File ci-out\STATUS.txt
+          cd ci-out
+          git init -q; git checkout -q -b ci-output-windows; git add -A
+          git -c user.name=pankqx -c user.email=pankqx@gmail.com commit -qm "Windows CI output ${{ github.run_number }}"
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" ci-output-windows
+
+  publish:
+    needs: [ubuntu, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Stable file names
+        run: |
+          echo "VERSION=$(cat VERSION | tr -d '[:space:]')" >> "$GITHUB_ENV"
+          cp out/tonefer_*_all.deb out/tonefer.deb
+          ls -la out
+      # Stable links: https://github.com/pankqx/tonefer/releases/latest/download/<file>
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: Tonefer ${{ env.VERSION }}
+          target_commitish: ${{ github.sha }}
+          make_latest: "true"
+          body: |
+            | Platform | Download |
+            |---|---|
+            | **Ubuntu** app | `tonefer.deb`: double-click to install |
+            | **Windows** app | `ToneferSetup.exe` (or `Tonefer-portable.zip`, no install) |
+            | **Android** app | https://github.com/pankqx/tonefer-android/releases/latest/download/tonefer.apk |
+            | **Any browser** | Once Tonefer runs on the laptop: http://127.0.0.1:8765/desk |
+          files: |
+            out/tonefer.deb
+            out/tonefer_*_all.deb
+            out/ToneferSetup.exe
+            out/Tonefer-portable.zip
