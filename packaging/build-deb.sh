@@ -54,6 +54,11 @@ Categories=Utility;Network;FileTransfer;
 Keywords=phone;transfer;share;photos;android;hotspot;
 StartupWMClass=tonefer
 StartupNotify=true
+Actions=browser;
+
+[Desktop Action browser]
+Name=Open in browser
+Exec=tonefer --browser
 DESK
 
 # Docs

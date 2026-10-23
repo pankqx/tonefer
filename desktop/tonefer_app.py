@@ -162,6 +162,9 @@ def main() -> int:
     ensure_server()
     if "--background" in sys.argv:  # just make sure the service runs
         return 0
+    if "--browser" in sys.argv:  # use the normal web browser instead of the app window
+        webbrowser.open(URL)
+        return 0
     try:
         return run_window()
     except (ImportError, ValueError) as e:
