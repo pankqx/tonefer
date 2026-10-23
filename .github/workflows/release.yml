@@ -82,26 +82,40 @@ jobs:
       - name: Install silently and test
         run: |
           New-Item -ItemType Directory -Force shots | Out-Null
-          Start-Process dist\ToneferSetup.exe -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /TASKS=startup" -Wait
-          $exe = "${env:ProgramFiles}\Tonefer\Tonefer.exe"
-          if (-not (Test-Path $exe)) { throw "Tonefer.exe not installed" }
-          Start-Process $exe -ArgumentList "--background"
-          $ok = $false
-          for ($i = 0; $i -lt 40; $i++) {
-            try { $r = Invoke-WebRequest http://127.0.0.1:8765/desk -UseBasicParsing -TimeoutSec 2; if ($r.Content -match "Transfers") { $ok = $true; break } } catch {}
-            Start-Sleep -Milliseconds 500
+          $diag = "shots\diag.txt"
+          $failed = $null
+          try {
+            Start-Process dist\ToneferSetup.exe -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /TASKS=startup /LOG=shots\install.log" -Wait
+            $exe = (Get-ChildItem "${env:ProgramFiles}\Tonefer\Tonefer.exe", "${env:ProgramFiles(x86)}\Tonefer\Tonefer.exe" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
+            "installed exe: $exe" | Out-File -Append $diag
+            if (-not $exe) { throw "Tonefer.exe not installed" }
+            Start-Process $exe -ArgumentList "--background"
+            $ok = $false
+            for ($i = 0; $i -lt 60; $i++) {
+              try { $r = Invoke-WebRequest http://127.0.0.1:8765/desk -UseBasicParsing -TimeoutSec 2; if ($r.Content -match "Transfers") { $ok = $true; break } } catch {}
+              Start-Sleep -Milliseconds 500
+            }
+            "server ok: $ok" | Out-File -Append $diag
+            if (-not $ok) { throw "Server did not start" }
+            netsh advfirewall firewall show rule name="Tonefer" | Out-File -Append $diag
+            Start-Process $exe
+            Start-Sleep -Seconds 12
+            Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+            $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+            $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
+            $bmp.Save("shots\windows-app.png", [System.Drawing.Imaging.ImageFormat]::Png)
+          } catch {
+            $failed = $_
+            "ERROR: $_" | Out-File -Append $diag
+          } finally {
+            Get-Process | Where-Object { $_.Name -match "Tonefer|msedge" } | Format-Table Name, Id -AutoSize | Out-String | Out-File -Append $diag
+            netstat -ano | Select-String ":8765" | Out-File -Append $diag
+            Copy-Item "$env:LOCALAPPDATA\Tonefer\tonefer.log" shots\ -ErrorAction SilentlyContinue
+            Get-ChildItem "${env:ProgramFiles}\Tonefer" -ErrorAction SilentlyContinue | Select-Object -First 15 Name | Out-String | Out-File -Append $diag
           }
-          if (-not $ok) { throw "Server did not start" }
-          "server ok"
-          netsh advfirewall firewall show rule name="Tonefer" | Select-String "Enabled|Profiles"
-          Start-Process $exe
-          Start-Sleep -Seconds 12
-          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
-          $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
-          $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
-          $g = [System.Drawing.Graphics]::FromImage($bmp)
-          $g.CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
-          $bmp.Save("shots\windows-app.png", [System.Drawing.Imaging.ImageFormat]::Png)
+          if ($failed) { throw $failed }
       - uses: actions/upload-artifact@v4
         with:
           name: windows

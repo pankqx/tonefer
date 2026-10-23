@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import time
 import shutil
 import subprocess
 import sys
@@ -21,11 +22,14 @@ import urllib.request
 import webbrowser
 from pathlib import Path
 
-# Windowed builds have no console: give print() somewhere harmless to go.
-if sys.stdout is None:
-    sys.stdout = open(os.devnull, "w")
-if sys.stderr is None:
-    sys.stderr = open(os.devnull, "w")
+# Windowed builds have no console: send output and errors to a log file instead.
+_LOG_DIR = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "Tonefer"
+_LOG_DIR.mkdir(parents=True, exist_ok=True)
+if sys.stdout is None or sys.stderr is None:
+    _log = open(_LOG_DIR / "tonefer.log", "a", buffering=1, encoding="utf-8")
+    sys.stdout = sys.stdout or _log
+    sys.stderr = sys.stderr or _log
+print(f"--- Tonefer start {time.strftime('%Y-%m-%d %H:%M:%S') if 'time' in globals() else ''} args={sys.argv[1:]}")
 
 import server  # noqa: E402  (the same server the Ubuntu app and browsers use)
 
@@ -45,6 +49,14 @@ def server_up() -> bool:
 
 
 def run_server() -> None:
+    try:
+        _serve()
+    except Exception:
+        import traceback
+        traceback.print_exc()
+
+
+def _serve() -> None:
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     from aiohttp import web
@@ -144,6 +156,15 @@ def run_tray() -> None:
 
 
 def main() -> int:
+    try:
+        return _main()
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        raise
+
+
+def _main() -> int:
     background = "--background" in sys.argv
     if server_up():
         # Already running (tray is up): just show the window.
