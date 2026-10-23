@@ -26,7 +26,7 @@ This guide takes you from download to everyday one-click use. No Git or programm
 | | |
 |---|---|
 | Laptop | Ubuntu 22.04 or newer (Windows 10/11 also supported) |
-| Phone | Android 8 or newer, with Chrome or the Tonefer app |
+| Phone | Android 10 or newer for the app (any Android with Chrome for the web view) |
 | Connection | Phone hotspot, USB cable, or any shared Wi‑Fi. Internet is **not** needed. |
 
 ---
@@ -149,7 +149,7 @@ The Android app (repository **tonefer-android**) adds:
 - **Background connection** with notifications
 - **Customisation:** theme, text size, auto-save photos, auto-copy notes, image quality, notifications
 
-**Install:** download the latest `tonefer.apk` from the tonefer-android **Releases** page and open it on the phone. Allow *Install unknown apps* for your browser when asked.
+**Install:** download the latest `tonefer-x.y.z.apk` from **github.com/pankqx/tonefer-android/releases** and open it on the phone. Allow *Install unknown apps* for your browser when asked.
 
 ---
 
