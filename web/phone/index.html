@@ -19,13 +19,13 @@
     flex: none;
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
     padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
-    background: var(--paper);
-    border-bottom: 1.5px solid var(--rule);
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
   }
   .pill { max-width: 52vw; }
   .offline {
     margin: 12px 12px 0;
-    background: var(--paper); border: 1.5px solid var(--rule); box-shadow: var(--hard-sm);
+    background: var(--panel); border: 1px solid var(--coral); border-radius: 14px;
     padding: 10px 12px; font-size: 12.5px;
   }
   .offline b { display: block; }
@@ -37,10 +37,10 @@
   .round { width: 42px; height: 42px; }
 
   .menubar .right { display: flex; align-items: center; gap: 12px; min-width: 0; }
-  .help-btn { width: 30px; height: 30px; font-weight: 600; font-size: 14px; box-shadow: var(--hard-sm); }
+  .help-btn { width: 32px; height: 32px; font-weight: 600; font-size: 14px; }
   .sheet {
     position: fixed; inset: 0; z-index: 55;
-    background: color-mix(in srgb, var(--desk) 85%, transparent);
+    background: color-mix(in srgb, var(--bg) 80%, transparent);
     display: flex; align-items: flex-end;
     padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
   }
@@ -59,7 +59,6 @@
   .welcome .win .content { padding: 22px 18px 18px; }
   .welcome .mark { margin-bottom: 18px; }
   .welcome h1 { font-size: 26px; margin: 0 0 10px; }
-  .welcome h1::after { content: "▍"; animation: cursor 1s steps(2) infinite; font-weight: 400; }
   .welcome p { color: var(--muted); margin: 0 0 16px; font-size: 13.5px; }
   .welcome .rows { list-style: none; margin: 0; padding: 0; counter-reset: s; }
   .welcome .rows li {
@@ -71,15 +70,13 @@
   .welcome .foot { margin-top: 18px; text-align: center; }
 </style>
 </head>
-<body>
+<body data-steps="Loading|Unlocking encryption keys|Looking for your laptop|Connecting|Ready">
 <div class="loader" id="loader" role="status" aria-live="polite">
-  <div class="inner win">
-    <div class="titlebar"><span class="box"></span><span class="title">tonefer</span></div>
-    <div class="content">
-      <div id="loaderMark"></div>
-      <div class="bar"><i></i></div>
-      <span class="msg" id="loaderMsg"><em>connecting</em><span class="dots"></span></span>
-    </div>
+  <div class="boot">
+    <div class="orbs"><i></i><i></i><i></i></div>
+    <div class="boot-brand">tonefer</div>
+    <div class="bar"><i></i></div>
+    <div class="msg" id="loaderMsg">Starting</div>
   </div>
 </div>
 

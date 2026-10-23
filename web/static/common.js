@@ -149,16 +149,26 @@
     return el;
   }
 
-  // Loading screen: stays at least `min` ms so it never just flickers.
+  // Loading screen: always shown for at least 5 seconds, stepping through what's happening.
+  const LOADER_MIN = 5000;
   const loaderStart = Date.now();
-  function hideLoader(min = 650) {
-    const el = document.getElementById("loader");
-    if (!el || el.classList.contains("done")) return;
-    setTimeout(() => el.classList.add("done"), Math.max(0, min - (Date.now() - loaderStart)));
-  }
-  function loaderText(html) {
+  const steps = (document.body.dataset.steps || "Loading interface|Checking network|Unlocking encryption keys|Connecting|Ready").split("|");
+  let stepTimer = null;
+  (function cycle(i = 0) {
     const m = document.getElementById("loaderMsg");
-    if (m) m.innerHTML = html;
+    if (!m || document.getElementById("loader")?.classList.contains("done")) return;
+    m.textContent = steps[Math.min(i, steps.length - 1)];
+    if (i < steps.length - 1) stepTimer = setTimeout(() => cycle(i + 1), LOADER_MIN / steps.length);
+  })();
+  function hideLoader() {
+    const el = document.getElementById("loader");
+    if (!el || el.classList.contains("done") || el.dataset.closing) return;
+    el.dataset.closing = "1";
+    setTimeout(() => { el.classList.add("done"); clearTimeout(stepTimer); }, Math.max(0, LOADER_MIN - (Date.now() - loaderStart)));
+  }
+  function loaderText(text) {
+    const m = document.getElementById("loaderMsg");
+    if (m) { clearTimeout(stepTimer); m.textContent = text; }
   }
 
   window.T = { hideLoader, loaderText, mark, brand, ICONS, esc, size, time, copyText, toast, renderTimeline };

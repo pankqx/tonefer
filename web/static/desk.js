@@ -21,7 +21,6 @@
   $("viewerSave").innerHTML = ICONS.down + " Save";
   $("pairAnother").innerHTML = "Pair another phone " + ICONS.arrow;
   $("connMark").innerHTML = mark("pulse", 34);
-  $("loaderMark").innerHTML = mark("pulse", 30);
   const tick = () => { $("clock").textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); };
   tick(); setInterval(tick, 10000);
 
@@ -149,6 +148,11 @@
           toast(m.item.kind === "text" ? "New note from your phone" : `Got ${m.item.name}`);
           ping();
         }
+      } else if (m.type === "rate") {
+        onRate(m);
+      } else if (m.type === "notice") {
+        toast(m.text);
+        loadPair(true);
       } else if (m.type === "deleted") {
         items = items.filter((i) => i.id !== m.id);
         draw(false);
@@ -261,6 +265,98 @@
   $("viewer").onclick = (e) => { if (e.target === $("viewer")) closeViewer(); };
   $("viewerSave").onclick = () => opts.download(viewing);
   window.addEventListener("keydown", (e) => { if (e.key === "Escape") closeViewer(); });
+
+  // ---- speedometer: real bytes/second measured by the laptop during each transfer ----
+  const MAX_MBPS = 100;
+  const R = 110, CX = 140, CY = 140, ARC = Math.PI * R;
+  const frac = (mbps) => Math.min(1, Math.log10(1 + Math.max(0, mbps)) / Math.log10(1 + MAX_MBPS));
+  (function drawGauge() {
+    const ticks = [0, 1, 5, 10, 25, 50, 100].map((v) => {
+      const th = Math.PI * (1 - frac(v));
+      const p = (r) => [CX + r * Math.cos(th), CY - r * Math.sin(th)];
+      const [x1, y1] = p(92), [x2, y2] = p(99), [lx, ly] = p(131);
+      return `<line class="tick" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><text class="ticklabel" x="${lx}" y="${ly + 3}">${v}</text>`;
+    }).join("");
+    $("gauge").innerHTML = `<svg viewBox="0 -6 280 160" aria-label="Transfer speed">
+      <path class="track" d="M ${CX - R} ${CY} A ${R} ${R} 0 0 1 ${CX + R} ${CY}"/>
+      <path class="fill" id="gFill" d="M ${CX - R} ${CY} A ${R} ${R} 0 0 1 ${CX + R} ${CY}" stroke-dasharray="${ARC}" stroke-dashoffset="${ARC}"/>
+      ${ticks}
+      <g class="needle" id="gNeedle" style="transform: rotate(-90deg)"><line x1="${CX}" y1="${CY}" x2="${CX}" y2="${CY - 84}"/></g>
+      <circle class="hub" cx="${CX}" cy="${CY}" r="7"/></svg>`;
+  })();
+
+  const fmt = (bps) => {
+    const mb = bps / 1e6;
+    return mb >= 100 ? mb.toFixed(0) : mb >= 10 ? mb.toFixed(1) : mb.toFixed(2);
+  };
+  function setNeedle(bps) {
+    const f = frac(bps / 1e6);
+    $("gNeedle").style.transform = `rotate(${-90 + 180 * f}deg)`;
+    $("gFill").setAttribute("stroke-dashoffset", String(ARC * (1 - f)));
+    $("speedValue").textContent = fmt(bps);
+  }
+  let idleTimer;
+  const live = {};
+  function onRate(m) {
+    clearTimeout(idleTimer);
+    const dir = m.dir === "in" ? "Phone → laptop" : "Laptop → phone";
+    const name = m.label === "Speed test" ? "speed test" : m.label;
+    if (!m.done) {
+      live[m.id] = m;
+      setNeedle(m.bps);
+      const pct = m.total ? Math.round(100 * m.bytes / m.total) : 0;
+      $("speedWhat").textContent = `${dir} · ${name} · ${pct}%`;
+    } else {
+      delete live[m.id];
+      // Small transfers finish before TCP gets up to speed; only big ones say much about the link.
+      const meaningful = m.bytes >= 512 * 1024;
+      const stat = m.dir === "in" ? "statIn" : "statOut";
+      if (meaningful || m.label === "Speed test") $(stat).textContent = fmt(m.bps) + " MB/s";
+      setNeedle(m.bps);
+      $("speedWhat").textContent = `${dir} · ${name} · avg ${fmt(m.bps)} MB/s in ${(m.seconds || 0).toFixed(1)} s`;
+      idleTimer = setTimeout(() => { if (!Object.keys(live).length) setNeedle(0); }, 2500);
+      if (m.label === "Speed test" && m.dir === "in") {
+        $("speedTest").disabled = false;
+        $("speedTest").textContent = "Run speed test";
+        toast(`Speed test: ↓ ${$("statOut").textContent} · ↑ ${$("statIn").textContent}`);
+      }
+    }
+  }
+  $("speedTest").onclick = async () => {
+    const r = await fetch("/desk/api/speedtest", { method: "POST" });
+    if (!r.ok) { toast(await r.text()); return; }
+    $("speedTest").disabled = true;
+    $("speedTest").textContent = "Testing… 16 MB each way";
+    setTimeout(() => { $("speedTest").disabled = false; $("speedTest").textContent = "Run speed test"; }, 60000);
+  };
+
+  // ---- auto-join hotspot ----
+  async function loadHotspot() {
+    let d;
+    try { d = await (await fetch("/desk/api/hotspot")).json(); } catch (_) { return; }
+    const sel = $("hsName");
+    const names = [...new Set([...(d.saved || []), d.name].filter(Boolean))];
+    if (document.activeElement !== sel) {
+      sel.innerHTML = `<option value="">Choose your phone's hotspot…</option>` +
+        names.map((n) => `<option ${n === d.name ? "selected" : ""}>${T.esc(n)}</option>`).join("");
+    }
+    $("hsOn").checked = !!d.enabled && !!d.name;
+    $("hsStatus").textContent = d.name
+      ? (d.status || (d.current === d.name ? `Connected to ${d.name}` : `Watching for ${d.name}`))
+      : names.length ? "Pick the hotspot once. The laptop then joins it whenever it's on."
+      : "Join your phone's hotspot once from the Wi‑Fi menu, then pick it here.";
+  }
+  async function saveHotspot() {
+    await fetch("/desk/api/hotspot", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: $("hsName").value, enabled: $("hsOn").checked }),
+    });
+    loadHotspot();
+  }
+  $("hsName").onchange = () => { if ($("hsName").value) $("hsOn").checked = true; saveHotspot(); };
+  $("hsOn").onchange = saveHotspot;
+  loadHotspot();
+  setInterval(loadHotspot, 5000);
 
   // ---- tabs: Transfers | Instructions ----
   function showTab(name) {

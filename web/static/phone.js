@@ -61,7 +61,7 @@
   function showWelcome(title, text) {
     $("app").hidden = true;
     $("welcome").hidden = false;
-    T.hideLoader(400);
+    T.hideLoader();
     $("wMark").innerHTML = mark(title ? "apart" : "pulse", 32);
     if (title) $("wTitle").innerHTML = title;
     if (text) $("wText").textContent = text;
@@ -132,7 +132,7 @@
     clearTimeout(offlineTimer);
     if (on) $("offline").hidden = true;
     else offlineTimer = setTimeout(() => { $("offline").hidden = false; T.hideLoader(); }, 4000);
-    if (!on && text === "laptop offline") T.loaderText("looking for laptop<span class=\"dots\"></span>");
+    if (!on && text === "laptop offline") T.loaderText("Looking for your laptop");
   }
 
   // ---------------- live connection ----------------
@@ -158,6 +158,8 @@
       } else if (m.type === "deleted") {
         items = items.filter((i) => i.id !== m.id);
         draw();
+      } else if (m.type === "speedtest") {
+        speedTest(m.bytes);
       } else if (m.type === "cleared") {
         items = []; draw();
       }
@@ -212,12 +214,13 @@
   async function upload(file) {
     const row = document.createElement("div");
     row.className = "up";
-    row.innerHTML = `Encrypting ${T.esc(file.name)}<div class="progress"><i></i></div>`;
+    row.innerHTML = `<span class="label-text">Encrypting ${T.esc(file.name)}</span><span class="rate"></span><div class="progress"><i></i></div>`;
     $("uploads").appendChild(row);
     try {
       const plain = new Uint8Array(await file.arrayBuffer());
       const body = seal(plain);
       row.firstChild.textContent = `Sending ${file.name}`;
+      const t0 = performance.now();
       await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", "/api/upload");
@@ -225,6 +228,8 @@
         xhr.setRequestHeader("X-Tonefer-Meta", sealJson({ name: file.name, mime: file.type }));
         xhr.upload.onprogress = (ev) => {
           if (ev.lengthComputable) row.querySelector("i").style.width = (100 * ev.loaded / ev.total) + "%";
+          const secs = (performance.now() - t0) / 1000;
+          if (secs > 0.3) row.querySelector(".rate").textContent = (ev.loaded / secs / 1e6).toFixed(1) + " MB/s";
         };
         xhr.onload = () => (xhr.status < 300 ? resolve() : reject(new Error(xhr.responseText || xhr.status)));
         xhr.onerror = () => reject(new Error("network error"));
@@ -234,6 +239,23 @@
       toast("Failed: " + err.message);
     } finally {
       row.remove();
+    }
+  }
+
+  // ---------------- speed test (started from the laptop) ----------------
+  async function speedTest(bytes) {
+    toast("Speed test running…");
+    try {
+      const t0 = performance.now();
+      const r = await fetch(`/api/speedtest?n=${bytes}`, { headers: { "X-Tonefer-Token": token }, cache: "no-store" });
+      await r.arrayBuffer();
+      const down = bytes / ((performance.now() - t0) / 1000);
+      const t1 = performance.now();
+      await fetch("/api/speedtest", { method: "POST", headers: { "X-Tonefer-Token": token }, body: new Blob([new Uint8Array(bytes)]) });
+      const up = bytes / ((performance.now() - t1) / 1000);
+      toast(`↓ ${(down / 1e6).toFixed(1)} MB/s · ↑ ${(up / 1e6).toFixed(1)} MB/s`);
+    } catch (e) {
+      toast("Speed test failed");
     }
   }
 
@@ -257,7 +279,6 @@
   $("attach").innerHTML = ICONS.plus;
   $("brand").innerHTML = brand();
   $("wBrand").innerHTML = brand();
-  $("loaderMark").innerHTML = mark("pulse", 30);
   $("sendBtn").innerHTML = ICONS.send;
 
   const k = loadKey();
