@@ -147,5 +147,17 @@
     return el;
   }
 
-  window.T = { mark, brand, ICONS, esc, size, time, copyText, toast, renderTimeline };
+  // Loading screen: stays at least `min` ms so it never just flickers.
+  const loaderStart = Date.now();
+  function hideLoader(min = 650) {
+    const el = document.getElementById("loader");
+    if (!el || el.classList.contains("done")) return;
+    setTimeout(() => el.classList.add("done"), Math.max(0, min - (Date.now() - loaderStart)));
+  }
+  function loaderText(html) {
+    const m = document.getElementById("loaderMsg");
+    if (m) m.innerHTML = html;
+  }
+
+  window.T = { hideLoader, loaderText, mark, brand, ICONS, esc, size, time, copyText, toast, renderTimeline };
 })();

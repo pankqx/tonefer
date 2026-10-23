@@ -28,7 +28,11 @@
     peerLabel: "phone",
     emptyTitle: "Nothing <em>here</em> yet.",
     emptyText: "Send a note or drop a photo. It lands on your phone right away.",
-    image: (item, img) => { img.src = `/desk/file/${item.id}`; },
+    image: (item, img) => {
+      img.classList.add("loading");
+      img.onload = img.onerror = () => img.classList.remove("loading");
+      img.src = `/desk/file/${item.id}`;
+    },
     open: (item) => openViewer(item),
     download: (item) => {
       const a = document.createElement("a");
@@ -127,6 +131,7 @@
     ws.onmessage = (e) => {
       const m = JSON.parse(e.data);
       if (m.type === "hello") {
+        T.hideLoader();
         items = m.items;
         $("host").textContent = m.host;
         setPresence(m.phones);

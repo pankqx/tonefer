@@ -271,3 +271,38 @@ mark, .hl {
 .round svg { width: 19px; height: 19px; }
 .round.send { background: var(--orange-deep); border-color: var(--orange-deep); color: #fff; }
 .round:disabled { opacity: .3; }
+
+/* ---------- loading screen: phone + laptop circles meet ---------- */
+.loader {
+  position: fixed; inset: 0; z-index: 100;
+  background: #191f06; color: #f0eeda;
+  display: grid; place-items: center;
+  transition: opacity .45s ease, visibility .45s;
+}
+.loader.done { opacity: 0; visibility: hidden; pointer-events: none; }
+.loader .inner { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+.loader .orbs { position: relative; width: 96px; height: 52px; }
+.loader .orbs i {
+  position: absolute; top: 0; width: 52px; height: 52px; border-radius: 50%;
+}
+.loader .orbs i:first-child { left: 0; background: #fffcb0; animation: meetL 1.6s cubic-bezier(.6, 0, .3, 1) infinite; }
+.loader .orbs i:last-child { right: 0; background: #e43e00; opacity: .92; animation: meetR 1.6s cubic-bezier(.6, 0, .3, 1) infinite; }
+@keyframes meetL { 0%, 100% { transform: translateX(-10px); } 50% { transform: translateX(14px); } }
+@keyframes meetR { 0%, 100% { transform: translateX(10px); } 50% { transform: translateX(-14px); } }
+.loader .brand { font-size: 26px; }
+.loader .msg { font-size: 14px; color: rgba(240, 238, 218, .55); min-height: 1.4em; }
+.loader .msg em { font-family: var(--serif); font-style: italic; font-size: 1.15em; }
+.loader .dots::after { content: ""; animation: dots 1.4s steps(4) infinite; }
+@keyframes dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
+@media (prefers-reduced-motion: reduce) {
+  .loader .orbs i { animation: none !important; }
+}
+
+/* shimmer while a photo is being fetched / decrypted */
+.card img.thumb:not([src]), .card img.thumb.loading {
+  background: linear-gradient(100deg, var(--soft) 30%, color-mix(in srgb, var(--soft) 55%, var(--paper)) 50%, var(--soft) 70%);
+  background-size: 300% 100%;
+  animation: shimmer 1.3s linear infinite;
+  color: transparent;
+}
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -50% 0; } }

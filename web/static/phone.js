@@ -61,6 +61,7 @@
   function showWelcome(title, text) {
     $("app").hidden = true;
     $("welcome").hidden = false;
+    T.hideLoader(400);
     $("wMark").innerHTML = mark(title ? "apart" : "pulse", 50);
     if (title) $("wTitle").innerHTML = title;
     if (text) $("wText").textContent = text;
@@ -95,7 +96,9 @@
     emptyTitle: "You're <em>in.</em>",
     emptyText: "Send a note or a photo. It lands on your laptop right away.",
     image: async (item, img) => {
+      img.classList.add("loading");
       try { img.src = await fetchFile(item); } catch (_) { img.alt = "Couldn't load"; }
+      img.onload = img.onerror = () => img.classList.remove("loading");
     },
     open: async (item) => {
       viewing = item;
@@ -128,7 +131,8 @@
     s.classList.toggle("on", !!on);
     clearTimeout(offlineTimer);
     if (on) $("offline").hidden = true;
-    else offlineTimer = setTimeout(() => { $("offline").hidden = false; }, 4000);
+    else offlineTimer = setTimeout(() => { $("offline").hidden = false; T.hideLoader(); }, 4000);
+    if (!on && text === "laptop offline") T.loaderText("<em>looking</em> for your laptop<span class=\"dots\"></span>");
   }
 
   // ---------------- live connection ----------------
@@ -142,6 +146,7 @@
       let m;
       try { m = openJson(e.data); } catch (_) { return; }
       if (m.type === "hello") {
+        T.hideLoader();
         retry = 0;
         items = m.items;
         status(m.host || "laptop", true);
