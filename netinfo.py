@@ -146,3 +146,55 @@ def doctor(port: int) -> None:
         print("  firewall     nothing blocking found")
     print("\n  If the phone still can't open the page, type the address above into")
     print("  Chrome on the phone. If that fails too, it is the firewall.\n")
+
+
+# --------------------------------------------------------------------------- #
+# Hotspot auto-join: when the phone's hotspot appears, connect to it.
+# --------------------------------------------------------------------------- #
+def saved_wifi() -> list[str]:
+    """Wi-Fi networks this laptop already knows (has joined before)."""
+    names: list[str] = []
+    if sys.platform.startswith("linux") and shutil.which("nmcli"):
+        for line in _run(["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show"]).splitlines():
+            name, _, kind = line.rpartition(":")
+            if kind == "802-11-wireless" and name:
+                names.append(name.replace("\\:", ":"))
+    elif sys.platform.startswith("win"):
+        for line in _run(["netsh", "wlan", "show", "profiles"]).splitlines():
+            if ":" in line and "profile" in line.lower():
+                n = line.split(":", 1)[1].strip()
+                if n:
+                    names.append(n)
+    return sorted(dict.fromkeys(names), key=str.lower)
+
+
+def visible_wifi(rescan: bool = False) -> set[str]:
+    """SSIDs currently in range."""
+    found: set[str] = set()
+    if sys.platform.startswith("linux") and shutil.which("nmcli"):
+        if rescan:
+            _run(["nmcli", "device", "wifi", "rescan"], timeout=6)
+        for line in _run(["nmcli", "-t", "-f", "SSID", "device", "wifi", "list", "--rescan", "no"], timeout=6).splitlines():
+            s = line.replace("\\:", ":").strip()
+            if s:
+                found.add(s)
+    elif sys.platform.startswith("win"):
+        for line in _run(["netsh", "wlan", "show", "networks"], timeout=6).splitlines():
+            k, _, v = line.partition(":")
+            if k.strip().upper().startswith("SSID") and v.strip():
+                found.add(v.strip())
+    return found
+
+
+def join_wifi(name: str) -> bool:
+    """Connects to a known Wi-Fi network. Returns True on success."""
+    if sys.platform.startswith("linux") and shutil.which("nmcli"):
+        out = _run(["nmcli", "connection", "up", "id", name], timeout=30)
+        if "successfully" in out.lower():
+            return True
+        out = _run(["nmcli", "device", "wifi", "connect", name], timeout=30)
+        return "successfully" in out.lower()
+    if sys.platform.startswith("win"):
+        out = _run(["netsh", "wlan", "connect", f"name={name}"], timeout=15)
+        return "success" in out.lower()
+    return False

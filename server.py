@@ -165,6 +165,72 @@ def lan_addresses() -> list[str]:
 
 
 # --------------------------------------------------------------------------- #
+# Transfer speed
+# --------------------------------------------------------------------------- #
+class Meter:
+    """Measures real bytes/second of one network transfer and reports it live to the laptop UI.
+
+    dir "in"  = phone → laptop,  dir "out" = laptop → phone.
+    """
+
+    def __init__(self, app: "Tonefer", direction: str, total: int, label: str):
+        self.app, self.dir, self.total, self.label = app, direction, total, label
+        self.id = uuid.uuid4().hex[:8]
+        self.start = time.monotonic()
+        self.bytes = 0
+        self.samples: list[tuple[float, int]] = [(self.start, 0)]
+        self.last_emit = 0.0
+
+    def rate(self, now: float) -> float:
+        # Rate over the last ~1.2 s, so the needle follows the live speed.
+        while len(self.samples) > 2 and now - self.samples[0][0] > 1.2:
+            self.samples.pop(0)
+        t0, b0 = self.samples[0]
+        return (self.bytes - b0) / max(now - t0, 1e-3)
+
+    async def add(self, n: int) -> None:
+        self.bytes += n
+        now = time.monotonic()
+        self.samples.append((now, self.bytes))
+        if now - self.last_emit >= 0.2:
+            self.last_emit = now
+            await self.app.desk_send({"type": "rate", "id": self.id, "dir": self.dir, "label": self.label,
+                                      "bps": self.rate(now), "bytes": self.bytes, "total": self.total,
+                                      "done": False})
+
+    async def finish(self) -> float:
+        elapsed = max(time.monotonic() - self.start, 1e-3)
+        avg = self.bytes / elapsed
+        await self.app.desk_send({"type": "rate", "id": self.id, "dir": self.dir, "label": self.label,
+                                  "bps": avg, "bytes": self.bytes, "total": self.total, "done": True,
+                                  "seconds": elapsed})
+        return avg
+
+
+SPEEDTEST_BYTES = 16 * 1024 * 1024
+_NOISE = os.urandom(256 * 1024)
+
+
+# --------------------------------------------------------------------------- #
+# Settings stored on the laptop (~/.tonefer/config.json)
+# --------------------------------------------------------------------------- #
+class Config:
+    def __init__(self, path: Path):
+        self.path = path
+        try:
+            self.data = json.loads(path.read_text("utf-8"))
+        except (OSError, ValueError):
+            self.data = {}
+
+    def get(self, key, default=None):
+        return self.data.get(key, default)
+
+    def set(self, **values) -> None:
+        self.data.update(values)
+        self.path.write_text(json.dumps(self.data, indent=2), "utf-8")
+
+
+# --------------------------------------------------------------------------- #
 # App
 # --------------------------------------------------------------------------- #
 class Tonefer:
@@ -177,6 +243,8 @@ class Tonefer:
         self.desks: set[web.WebSocketResponse] = set()
         self._net_checked = -1e9
         self._net_cache: dict = {}
+        self.config = Config(APP_DIR / "config.json")
+        self.hotspot_status = ""
 
     # ---- broadcasting --------------------------------------------------- #
     async def broadcast(self, event: dict) -> None:
@@ -191,6 +259,14 @@ class Tonefer:
                 await ws.send_str(sealed)
             except Exception:
                 self.phones.discard(ws)
+
+    async def desk_send(self, event: dict) -> None:
+        msg = json.dumps(event)
+        for ws in list(self.desks):
+            try:
+                await ws.send_str(msg)
+            except Exception:
+                self.desks.discard(ws)
 
     async def announce_presence(self) -> None:
         msg = json.dumps({"type": "presence", "phones": len(self.phones)})
@@ -227,6 +303,8 @@ class Tonefer:
             if not secrets_equal(token, self.vault.token):
                 raise web.HTTPUnauthorized(text="Not paired. Scan the QR code on your laptop.")
         resp = await handler(request)
+        if getattr(resp, "prepared", False):
+            return resp
         resp.headers["Cache-Control"] = "no-store"
         resp.headers["X-Content-Type-Options"] = "nosniff"
         resp.headers["Referrer-Policy"] = "no-referrer"
@@ -269,10 +347,22 @@ class Tonefer:
             raise web.HTTPRequestEntityTooLarge(MAX_FILE, request.content_length)
         try:
             meta = self.vault.open_json(request.headers.get("X-Tonefer-Meta", ""))
-            data = self.vault.open(await request.read())
         except (nacl.exceptions.CryptoError, ValueError):
             raise web.HTTPForbidden(text="Payload did not decrypt. Re-pair your phone.")
-        item = self.store_file("Received", meta.get("name", "file"), data, meta.get("mime"), "phone")
+        name = str(meta.get("name", "file"))
+        meter = Meter(self, "in", request.content_length or 0, name)
+        buf = bytearray()
+        async for chunk in request.content.iter_chunked(64 * 1024):
+            buf += chunk
+            if len(buf) > MAX_FILE + 1024:
+                raise web.HTTPRequestEntityTooLarge(MAX_FILE, len(buf))
+            await meter.add(len(chunk))
+        await meter.finish()
+        try:
+            data = await asyncio.to_thread(self.vault.open, bytes(buf))
+        except (nacl.exceptions.CryptoError, ValueError):
+            raise web.HTTPForbidden(text="Payload did not decrypt. Re-pair your phone.")
+        item = self.store_file("Received", name, data, meta.get("mime"), "phone")
         await self.publish(item)
         return web.json_response({"ok": True, "id": item["id"]})
 
@@ -285,7 +375,37 @@ class Tonefer:
             raise web.HTTPGone(text="File was moved or deleted on the laptop.")
         data = await asyncio.to_thread(path.read_bytes)
         sealed = await asyncio.to_thread(self.vault.seal, data)
-        return web.Response(body=sealed, content_type="application/octet-stream")
+        return await self.stream_out(request, sealed, item["name"])
+
+    async def stream_out(self, request, payload, label: str, total: int | None = None):
+        """Sends bytes to the phone in chunks, measuring the real network speed."""
+        size = total if total is not None else len(payload)
+        resp = web.StreamResponse(headers={"Content-Type": "application/octet-stream", "Cache-Control": "no-store"})
+        resp.content_length = size
+        await resp.prepare(request)
+        meter = Meter(self, "out", size, label)
+        step = 256 * 1024
+        sent = 0
+        while sent < size:
+            n = min(step, size - sent)
+            chunk = payload[sent:sent + n] if total is None else _NOISE[:n]
+            await resp.write(chunk)
+            sent += n
+            await meter.add(n)
+        await resp.write_eof()
+        await meter.finish()
+        return resp
+
+    async def phone_speed_down(self, request):
+        n = min(int(request.query.get("n", SPEEDTEST_BYTES)), 128 * 1024 * 1024)
+        return await self.stream_out(request, None, "Speed test", total=n)
+
+    async def phone_speed_up(self, request):
+        meter = Meter(self, "in", request.content_length or 0, "Speed test")
+        async for chunk in request.content.iter_chunked(64 * 1024):
+            await meter.add(len(chunk))
+        bps = await meter.finish()
+        return web.json_response({"ok": True, "bps": bps})
 
     # ---- laptop side ---------------------------------------------------- #
     async def desk_index(self, request):
@@ -365,6 +485,59 @@ class Tonefer:
                                   "address": f"{chosen}:{PORT}" if chosen else "",
                                   "phones": len(self.phones), **self._net_cache})
 
+    async def desk_speedtest(self, request):
+        if not self.phones:
+            raise web.HTTPConflict(text="Connect a phone first.")
+        await self.broadcast_phones({"type": "speedtest", "bytes": SPEEDTEST_BYTES})
+        return web.json_response({"ok": True, "bytes": SPEEDTEST_BYTES})
+
+    async def broadcast_phones(self, event: dict) -> None:
+        sealed = self.vault.seal_json(event)
+        for ws in list(self.phones):
+            try:
+                await ws.send_str(sealed)
+            except Exception:
+                self.phones.discard(ws)
+
+    async def desk_hotspot_get(self, request):
+        saved = await asyncio.to_thread(netinfo.saved_wifi)
+        current = await asyncio.to_thread(netinfo.wifi_name)
+        return web.json_response({"name": self.config.get("hotspot", ""), "enabled": self.config.get("auto_join", True),
+                                  "saved": saved, "current": current, "status": self.hotspot_status,
+                                  "platform": sys.platform})
+
+    async def desk_hotspot_set(self, request):
+        body = await request.json()
+        self.config.set(hotspot=str(body.get("name", "")).strip(), auto_join=bool(body.get("enabled", True)))
+        self.hotspot_status = ""
+        return await self.desk_hotspot_get(request)
+
+    async def hotspot_watcher(self) -> None:
+        """Every few seconds: if the chosen hotspot is in range and we're not on it, join it."""
+        rounds = 0
+        while True:
+            await asyncio.sleep(6)
+            rounds += 1
+            name = self.config.get("hotspot", "")
+            if not name or not self.config.get("auto_join", True):
+                continue
+            try:
+                current = await asyncio.to_thread(netinfo.wifi_name)
+                if current == name:
+                    self.hotspot_status = f"Connected to {name}"
+                    continue
+                visible = await asyncio.to_thread(netinfo.visible_wifi, rounds % 3 == 0)
+                if name not in visible:
+                    self.hotspot_status = f"Waiting for {name} to appear"
+                    continue
+                self.hotspot_status = f"Joining {name}…"
+                ok = await asyncio.to_thread(netinfo.join_wifi, name)
+                self.hotspot_status = f"Connected to {name}" if ok else f"Couldn't join {name}"
+                if ok:
+                    await self.desk_send({"type": "notice", "text": f"Joined hotspot {name}"})
+            except Exception as e:  # never let the watcher die
+                self.hotspot_status = f"Auto-join error: {e}"
+
     async def desk_repair(self, request):
         self.vault.rotate()
         for ws in list(self.phones):
@@ -405,6 +578,8 @@ class Tonefer:
         r.add_get("/ws", self.phone_ws)
         r.add_get("/api/ping", self.phone_ping)
         r.add_post("/api/upload", self.phone_upload)
+        r.add_get("/api/speedtest", self.phone_speed_down)
+        r.add_post("/api/speedtest", self.phone_speed_up)
         r.add_get("/api/file/{id}", self.phone_file)
         r.add_get("/desk", self.desk_index)
         r.add_get("/desk/ws", self.desk_ws)
@@ -413,10 +588,22 @@ class Tonefer:
         r.add_get("/desk/file/{id}", self.desk_file)
         r.add_get("/desk/api/pair", self.desk_pair)
         r.add_post("/desk/api/repair", self.desk_repair)
+        r.add_post("/desk/api/speedtest", self.desk_speedtest)
+        r.add_get("/desk/api/hotspot", self.desk_hotspot_get)
+        r.add_post("/desk/api/hotspot", self.desk_hotspot_set)
         r.add_post("/desk/api/delete/{id}", self.desk_delete)
         r.add_post("/desk/api/clear", self.desk_clear)
         r.add_post("/desk/api/open-folder", self.desk_open_folder)
         r.add_static("/static", WEB / "static")
+
+        async def start_watcher(_app):
+            _app["watcher"] = asyncio.create_task(self.hotspot_watcher())
+
+        async def stop_watcher(_app):
+            _app["watcher"].cancel()
+
+        app.on_startup.append(start_watcher)
+        app.on_cleanup.append(stop_watcher)
         return app
 
 
