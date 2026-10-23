@@ -40,11 +40,12 @@ jobs:
           WEBKIT_DISABLE_COMPOSITING_MODE: "1"
         run: |
           mkdir -p shots
-          xvfb-run -a -s "-screen 0 1440x900x24" bash -c '
-            dbus-launch --exit-with-session tonefer > app.log 2>&1 &
-            sleep 4;  import -window root shots/ubuntu-app-loading.png
-            sleep 6;  import -window root shots/ubuntu-app.png
-            pkill -f tonefer_app.py || true'
+          timeout 90 xvfb-run -a -s "-screen 0 1440x900x24" bash -c '
+            tonefer > app.log 2>&1 &
+            APP=$!
+            sleep 4; import -window root shots/ubuntu-app-loading.png
+            sleep 6; import -window root shots/ubuntu-app.png
+            kill $APP 2>/dev/null; wait $APP 2>/dev/null; true'
           cat app.log || true
           ls -la shots
 
