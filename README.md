@@ -25,6 +25,8 @@ Most phone-to-laptop tools go through someone else's server, need an account, or
 | **One click** | Runs in the background at login, appears in the app launcher, and auto-joins your hotspot. |
 | **History** | Every transfer stays in a timeline on both devices until you clear it. |
 | **Android app** | *Share → Tonefer* from any app, automatic discovery, background notifications and a full customisation menu. |
+| **Live speedometer** | Measures the real speed of every transfer, plus a one-click speed test. |
+| **Auto hotspot** | The laptop joins your phone's hotspot by itself. Shares made while it's away are queued and delivered automatically. |
 | **Built-in help** | An Instructions tab on the laptop (<kbd>F1</kbd>) and a help sheet on the phone. |
 
 <p align="center">

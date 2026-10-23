@@ -11,7 +11,7 @@ This guide takes you from download to everyday one-click use. No Git or programm
 3. [One-click setup (recommended)](#3-one-click-setup-recommended)
 4. [Pair your phone](#4-pair-your-phone)
 5. [Everyday use](#5-everyday-use)
-6. [Connection options](#6-connection-options)
+6. [Connection options, auto hotspot & speed](#6-connection-options)
 7. [Android app](#7-android-app)
 8. [Updating](#8-updating)
 9. [Windows](#9-windows)
@@ -133,10 +133,53 @@ Files sent to the laptop are saved in `~/Tonefer/Received`. History is kept on b
 | Option | Speed | How |
 |---|---|---|
 | **USB tethering** | Fastest and most stable | Plug the phone in, then Settings → Hotspot & tethering → **USB tethering** |
-| **Phone hotspot** | Fast; best on 5 GHz | Settings → Hotspot → on, then join it from the laptop |
+| **Phone hotspot** | Fast; best on 5 GHz | Settings → Hotspot → on. The laptop joins by itself (6a). |
 | **Shared Wi‑Fi** | Depends on the network | Both devices on the same network. Some public or college networks block device-to-device traffic. |
 
 **Tip:** in the phone's hotspot settings, choose the **5 GHz** band if it's offered. Photos transfer noticeably faster.
+
+### 6a. Automatic hotspot connection
+
+With this set up, sharing works even when the hotspot is off:
+
+1. **Share → Tonefer** on the phone.
+2. If the laptop can't be reached, Tonefer **keeps the item** and **opens the hotspot switch**. Tap it on.
+3. The laptop sees the hotspot and **joins it by itself** within a few seconds.
+4. Tonefer **delivers the item automatically** and confirms with a notification.
+
+> Android doesn't allow apps to turn the hotspot on by themselves (blocked since Android 8). Tonefer opens the switch for you, so it's one tap. Even quicker: add the **Hotspot** tile to the phone's Quick Settings and swipe down.
+
+**Ubuntu setup (once):**
+
+1. Turn on the phone's hotspot and join it once from the laptop's Wi‑Fi menu, so the laptop knows the password.
+2. Run:
+   ```bash
+   cd ~/tonefer
+   ./scripts/install-ubuntu.sh --hotspot "Your Hotspot Name"
+   ```
+   Or, in Tonefer on the laptop, open the **Auto-join hotspot** window, pick the hotspot and leave the switch on.
+
+From then on, Tonefer checks every few seconds. When the hotspot appears, the laptop joins it, even if it's connected to other Wi‑Fi.
+
+**Windows setup (once):**
+
+1. Turn on the phone's hotspot and join it from the Wi‑Fi menu (taskbar → Wi‑Fi icon).
+2. Open **Settings → Network & internet → Wi‑Fi → Manage known networks → your hotspot**, then:
+   - turn on **Connect automatically when in range**;
+   - set **Network profile type** to **Private**.
+3. In Tonefer on the laptop, open the **Auto-join hotspot** window, pick the hotspot and leave the switch on. Tonefer then switches to it from other Wi‑Fi too.
+4. Make Tonefer start with Windows: press <kbd>Win+R</kbd>, type `shell:startup`, Enter, and put a shortcut to `run.bat` in that folder.
+
+The same thing from the command line (Command Prompt, using your hotspot's name):
+
+```bat
+netsh wlan set profileparameter name="Your Hotspot Name" connectionmode=auto
+netsh wlan connect name="Your Hotspot Name"
+```
+
+### 6b. Transfer speed
+
+The **Transfer speed** window on the laptop shows the real speed of every transfer, measured live while the bytes cross the network. **Run speed test** sends 16 MB each way to the connected phone. Typical results: hotspot 3–20 MB/s, USB tethering 15–40 MB/s.
 
 ---
 
@@ -170,8 +213,7 @@ If you used the ZIP, download it again and replace the folder. History and pairi
 1. Install Python 3 from **python.org**, ticking **Add Python to PATH**.
 2. Download the ZIP (section 2) and extract it.
 3. Double-click **`run.bat`**. When Windows Firewall asks, allow **Private networks**.
-4. Set the hotspot to Private: Settings → Network & internet → Wi‑Fi → *your hotspot* → **Private network**.
-5. To start Tonefer with Windows: press <kbd>Win+R</kbd>, type `shell:startup`, and put a shortcut to `run.bat` in that folder.
+4. Set up automatic hotspot connection and start-up as in **section 6a → Windows setup**.
 
 ---
 

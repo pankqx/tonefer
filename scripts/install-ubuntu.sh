@@ -111,7 +111,20 @@ if command -v nmcli >/dev/null 2>&1; then
   fi
   if [ -n "$HOTSPOT" ]; then
     if nmcli connection modify "$HOTSPOT" connection.autoconnect yes connection.autoconnect-priority 50 2>/dev/null; then
-      ok "Laptop auto-joins \"$HOTSPOT\" whenever it's on"
+      # Tonefer's watcher also switches over from other Wi-Fi as soon as the hotspot appears.
+      mkdir -p "$HOME/.tonefer"
+      "$ROOT/.venv/bin/python" - "$HOTSPOT" <<'PY'
+import json, sys, pathlib
+p = pathlib.Path.home() / ".tonefer" / "config.json"
+try:
+    data = json.loads(p.read_text())
+except Exception:
+    data = {}
+data.update(hotspot=sys.argv[1], auto_join=True)
+p.write_text(json.dumps(data, indent=2))
+PY
+      systemctl --user restart tonefer.service 2>/dev/null || true
+      ok "Laptop auto-joins \"$HOTSPOT\" whenever it's on, even from other Wi-Fi"
     else
       skip "Couldn't find \"$HOTSPOT\". Join it once from the Wi-Fi menu, then re-run with --hotspot \"$HOTSPOT\""
     fi
