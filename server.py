@@ -31,7 +31,7 @@ from pathlib import Path
 import nacl.exceptions
 import nacl.secret
 import nacl.utils
-import psutil
+import netinfo
 import qrcode
 import qrcode.image.svg
 from aiohttp import WSMsgType, web
@@ -161,27 +161,7 @@ def unique_path(folder: Path, name: str) -> Path:
 
 
 def lan_addresses() -> list[str]:
-    """IPv4 addresses a phone could reach, most likely first."""
-    found = []
-    for iface, addrs in psutil.net_if_addrs().items():
-        stats = psutil.net_if_stats().get(iface)
-        if stats and not stats.isup:
-            continue
-        low = iface.lower()
-        if low.startswith(("lo", "docker", "veth", "br-", "virbr", "vmnet", "vbox", "vethernet")):
-            continue
-        for a in addrs:
-            if a.family.name == "AF_INET" and not a.address.startswith(("127.", "169.254.")):
-                found.append(a.address)
-
-    def rank(ip: str) -> int:
-        if ip.startswith(("192.168.", "10.")):
-            return 0
-        if ip.startswith("172."):
-            return 1
-        return 2
-
-    return sorted(dict.fromkeys(found), key=rank)
+    return [d["ip"] for d in netinfo.addresses()]
 
 
 # --------------------------------------------------------------------------- #
@@ -195,6 +175,8 @@ class Tonefer:
         self.history = History(APP_DIR / "history.json")
         self.phones: set[web.WebSocketResponse] = set()
         self.desks: set[web.WebSocketResponse] = set()
+        self._net_checked = -1e9
+        self._net_cache: dict = {}
 
     # ---- broadcasting --------------------------------------------------- #
     async def broadcast(self, event: dict) -> None:
@@ -362,15 +344,26 @@ class Tonefer:
             "Content-Disposition": f"{disp}; filename*=UTF-8''{quote(item['name'])}"})
 
     async def desk_pair(self, request):
-        ips = lan_addresses()
-        chosen = request.query.get("ip") or (ips[0] if ips else "")
+        addrs = await asyncio.to_thread(netinfo.addresses)
+        ips = [d["ip"] for d in addrs]
+        chosen = request.query.get("ip")
+        if chosen not in ips:
+            chosen = ips[0] if ips else ""
         url = f"http://{chosen}:{PORT}/#k={self.vault.key_b64}" if chosen else ""
         svg = ""
         if url:
-            img = qrcode.make(url, image_factory=qrcode.image.svg.SvgPathImage, box_size=10, border=2)
+            img = qrcode.make(url, image_factory=qrcode.image.svg.SvgPathImage, box_size=10, border=1)
             svg = img.to_string(encoding="unicode")
-        return web.json_response({"ips": ips, "ip": chosen, "url": url, "svg": svg,
-                                  "phones": len(self.phones)})
+        now = time.monotonic()
+        if now - self._net_checked > 20:
+            self._net_cache = {
+                "wifi": await asyncio.to_thread(netinfo.wifi_name),
+                "firewall": await asyncio.to_thread(netinfo.firewall_hint, PORT),
+            }
+            self._net_checked = now
+        return web.json_response({"addrs": addrs, "ip": chosen, "url": url, "svg": svg,
+                                  "address": f"{chosen}:{PORT}" if chosen else "",
+                                  "phones": len(self.phones), **self._net_cache})
 
     async def desk_repair(self, request):
         self.vault.rotate()
@@ -438,20 +431,33 @@ def quote(s: str) -> str:
 
 
 def main() -> None:
+    if "--doctor" in sys.argv:
+        netinfo.doctor(PORT)
+        return
     tonefer = Tonefer()
     app = tonefer.build()
     desk_url = f"http://127.0.0.1:{PORT}/desk"
-    ips = lan_addresses()
+    addrs = netinfo.addresses()
     print(f"\n  tonefer {VERSION}")
     print(f"  laptop view  {desk_url}")
-    for ip in ips:
-        print(f"  phone reach  http://{ip}:{PORT}")
-    if not ips:
+    for d in addrs:
+        print(f"  phone reach  http://{d['ip']}:{PORT}   ({d['iface']})")
+    if not addrs:
         print("  no network yet: turn on your phone's hotspot and join it from this laptop")
+    fw = netinfo.firewall_hint(PORT)
+    if fw and fw["name"] in ("ufw", "firewalld", "windows-public"):
+        print(f"\n  ! {fw['text']}\n    fix: {fw['fix']}")
     print(f"  files        {FILES_DIR}\n")
     if "--no-browser" not in sys.argv:
         app.on_startup.append(lambda _: _open_later(desk_url))
-    web.run_app(app, host="0.0.0.0", port=PORT, print=None)
+    try:
+        web.run_app(app, host="0.0.0.0", port=PORT, print=None)
+    except OSError as e:
+        if getattr(e, "errno", None) in (98, 48, 10048):
+            print(f"  Port {PORT} is busy — tonefer is probably already running.")
+            print(f"  Open {desk_url} or set TONEFER_PORT to another number.")
+            sys.exit(1)
+        raise
 
 
 async def _open_later(url: str) -> None:
