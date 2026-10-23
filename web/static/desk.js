@@ -20,13 +20,16 @@
   $("clear").innerHTML = ICONS.trash + "Clear history";
   $("viewerSave").innerHTML = ICONS.down + " Save";
   $("pairAnother").innerHTML = "Pair another phone " + ICONS.arrow;
-  $("connMark").innerHTML = mark("pulse", 54);
+  $("connMark").innerHTML = mark("pulse", 34);
+  $("loaderMark").innerHTML = mark("pulse", 30);
+  const tick = () => { $("clock").textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); };
+  tick(); setInterval(tick, 10000);
 
   // ---- rendering ----
   const opts = {
     self: "laptop",
     peerLabel: "phone",
-    emptyTitle: "Nothing <em>here</em> yet.",
+    emptyTitle: "No transfers yet",
     emptyText: "Send a note or drop a photo. It lands on your phone right away.",
     image: (item, img) => {
       img.classList.add("loading");
@@ -92,7 +95,7 @@
       qr.innerHTML = d.svg;
       if (urlChanged) { qr.classList.remove("fresh"); void qr.offsetWidth; qr.classList.add("fresh"); toast("Network changed. QR code updated"); }
     } else {
-      qr.innerHTML = `<div class="none">${mark("apart", 44)}<b>No network yet.</b>Turn on your phone's hotspot and connect this laptop to it. This card updates by itself.</div>`;
+      qr.innerHTML = `<div class="none">${mark("apart", 32)}<b>No network yet.</b>Turn on your phone's hotspot and connect this laptop to it. This card updates by itself.</div>`;
     }
 
     $("addrRow").hidden = !d.address;
@@ -104,13 +107,13 @@
     // checklist
     const c2 = $("c2"), c2t = $("c2t");
     if (d.wifi) {
-      c2.className = "n ok"; c2.textContent = "✓";
-      c2t.innerHTML = `Laptop is on <mark>${T.esc(d.wifi)}</mark><small>Is that your phone's hotspot? If not, switch to it.</small>`;
+      c2.className = "n ok";
+      c2t.innerHTML = `Laptop is on <mark>${T.esc(d.wifi)}</mark><small>Should be your phone's hotspot.</small>`;
     } else if (d.addrs.length) {
-      c2.className = "n"; c2.textContent = "02";
-      c2t.innerHTML = `Join it from this laptop<small>Pick your phone in the laptop's Wi‑Fi list.</small>`;
+      c2.className = "n";
+      c2t.innerHTML = `Laptop joined it<small>Pick your phone in the laptop's Wi‑Fi list.</small>`;
     } else {
-      c2.className = "n warn"; c2.textContent = "02";
+      c2.className = "n warn";
       c2t.innerHTML = `Laptop isn't on any network<small>Pick your phone in the laptop's Wi‑Fi list.</small>`;
     }
 

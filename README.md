@@ -7,7 +7,7 @@ Send photos, files and messages between your phone and laptop — privately, wit
 - **Works without Wi‑Fi.** Turn on your phone's hotspot and connect the laptop to it. The two devices talk directly over that link. Local transfers don't use mobile data.
 - **End-to-end encrypted.** Pairing is a one-time QR scan that shares a 256-bit key. Every message and file is sealed with it (XSalsa20‑Poly1305). Anything that doesn't decrypt is rejected.
 - **Keeps history.** Everything you send either way stays in a timeline on both devices. Files land in `~/Tonefer/Received` and `~/Tonefer/Sent`.
-- **Calm, editorial design.** Bone and olive palette, Inter Tight with Instrument Serif accents, one timeline, drag‑and‑drop and paste.
+- **Old-school desktop design.** Paper and ink, 1-bit windows with pinstriped title bars, hard shadows, IBM Plex Mono throughout.
 
 ## Run it
 

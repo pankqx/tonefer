@@ -62,7 +62,7 @@
     $("app").hidden = true;
     $("welcome").hidden = false;
     T.hideLoader(400);
-    $("wMark").innerHTML = mark(title ? "apart" : "pulse", 50);
+    $("wMark").innerHTML = mark(title ? "apart" : "pulse", 32);
     if (title) $("wTitle").innerHTML = title;
     if (text) $("wText").textContent = text;
   }
@@ -70,7 +70,7 @@
   function unpair(reason) {
     try { localStorage.removeItem(STORE); } catch (_) {}
     key = null;
-    showWelcome("Unpaired. <em>Scan</em> again.", reason || "Scan the new code on your laptop to pair again.");
+    showWelcome("Unpaired.", reason || "Scan the new code on your laptop to pair again.");
   }
 
   // ---------------- state + rendering ----------------
@@ -93,7 +93,7 @@
   const opts = {
     self: "phone",
     peerLabel: "laptop",
-    emptyTitle: "You're <em>in.</em>",
+    emptyTitle: "Connected",
     emptyText: "Send a note or a photo. It lands on your laptop right away.",
     image: async (item, img) => {
       img.classList.add("loading");
@@ -132,7 +132,7 @@
     clearTimeout(offlineTimer);
     if (on) $("offline").hidden = true;
     else offlineTimer = setTimeout(() => { $("offline").hidden = false; T.hideLoader(); }, 4000);
-    if (!on && text === "laptop offline") T.loaderText("<em>looking</em> for your laptop<span class=\"dots\"></span>");
+    if (!on && text === "laptop offline") T.loaderText("looking for laptop<span class=\"dots\"></span>");
   }
 
   // ---------------- live connection ----------------
@@ -251,6 +251,7 @@
   $("attach").innerHTML = ICONS.plus;
   $("brand").innerHTML = brand();
   $("wBrand").innerHTML = brand();
+  $("loaderMark").innerHTML = mark("pulse", 30);
   $("sendBtn").innerHTML = ICONS.send;
 
   const k = loadKey();

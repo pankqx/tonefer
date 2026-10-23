@@ -13,12 +13,14 @@
     qr: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/></svg>',
   };
 
-  // Two circles — phone and laptop. "apart" when not connected.
+  // Phone ⇄ laptop icon. "apart" = dashed link (not connected), "pulse" = blinking link.
   function mark(cls = "", size = 30) {
-    return `<svg class="mark ${cls}" width="${size * 1.6}" height="${size}" viewBox="0 0 48 30" aria-hidden="true">
-      <circle class="a" cx="17" cy="15" r="13"/><circle class="b" cx="31" cy="15" r="13"/></svg>`;
+    return `<svg class="mark ${cls}" width="${size * 2}" height="${size}" viewBox="0 0 64 32" aria-hidden="true">
+      <rect class="dev" x="2" y="5" width="13" height="23" rx="2"/><path class="line" d="M6.5 24h4"/>
+      <rect class="dev" x="37" y="4" width="22" height="16"/><path class="line" d="M33 25h30l-3-5H36z" fill="var(--paper)"/>
+      <path class="line link" d="M19 11h13m-3-3 3 3-3 3M32 19H19m3-3-3 3 3 3"/></svg>`;
   }
-  const brand = () => `<span class="brand">tone<i>/</i><em>fer</em></span>`;
+  const brand = () => `<span class="brand"><span class="logo"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square"><path d="M2 5h11m-3-3 3 3-3 3M14 11H3m3-3-3 3 3 3"/></svg></span>tonefer</span>`;
 
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 

@@ -5,186 +5,186 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>tonefer</title>
 <link rel="icon" href="/static/icon.svg">
-<link rel="preload" href="/static/fonts/inter-tight.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/static/fonts/plex-mono-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/static/tonefer.css">
 <style>
   body { overflow: hidden; }
   .page { height: 100vh; display: flex; flex-direction: column; }
 
-  .top {
-    display: flex; align-items: center; gap: 16px;
-    padding: 14px 28px;
-    background: var(--panel); color: var(--panel-ink);
-    flex: none;
+  /* menu bar */
+  .menubar {
+    flex: none; height: 34px;
+    display: flex; align-items: center; gap: 22px;
+    padding: 0 18px;
+    background: var(--paper);
+    border-bottom: 1.5px solid var(--rule);
+    font-size: 13px;
   }
-  .top .brand { font-size: 24px; }
-  .top .grow { flex: 1; }
-  .top .host { font-size: 13px; color: var(--panel-muted); }
-  .top .host em { font-family: var(--serif); font-size: 15px; }
+  .menubar .grow { flex: 1; }
+  .menubar .item { color: var(--muted); }
+  .menubar .clock { font-weight: 500; min-width: 48px; text-align: right; }
 
-  .body { flex: 1; display: grid; grid-template-columns: 380px 1fr; min-height: 0; }
-  aside {
-    border-right: 1px solid var(--line);
-    padding: 24px 24px 18px 28px;
-    overflow-y: auto;
-    display: flex; flex-direction: column; gap: 14px;
+  .desk {
+    flex: 1; min-height: 0;
+    display: grid; grid-template-columns: 340px 1fr; gap: 26px;
+    padding: 26px 30px 28px;
   }
+  .stack { display: flex; flex-direction: column; gap: 22px; min-height: 0; overflow-y: auto; padding: 0 4px 6px 0; }
 
-  .panel {
-    background: var(--panel); color: var(--panel-ink);
-    border-radius: 18px;
-    padding: 24px 22px 18px;
-  }
-  .panel h2 { font-size: 40px; margin: 0 0 18px; }
-  .panel h2 em { color: var(--orange); font-size: 1.08em; }
+  /* pairing window */
   .qr {
-    background: var(--butter); border-radius: 14px; padding: 14px;
+    border: 1.5px solid var(--rule); background: #fff; padding: 10px;
     aspect-ratio: 1; display: grid; place-items: center;
   }
   .qr svg { width: 100%; height: 100%; display: block; }
-  .qr svg path { fill: #191f06; }
-  .qr .none { color: #191f06; font-size: 14px; text-align: center; padding: 18px; line-height: 1.45; }
-  .qr .none .mark { margin: 0 auto 16px; }
-  .qr .none b { display: block; font-size: 22px; letter-spacing: -0.03em; margin-bottom: 6px; }
-  .qr.fresh { animation: flash .7s ease-out; }
-  @keyframes flash { from { box-shadow: 0 0 0 6px var(--orange); } }
+  .qr svg path { fill: #141414; }
+  .qr .none { color: #141414; font-size: 13px; text-align: center; padding: 16px; line-height: 1.5; }
+  .qr .none .mark { color: #141414; margin: 0 auto 14px; }
+  .qr .none b { display: block; margin-bottom: 4px; }
+  .qr.fresh { animation: invert .5s steps(2) 2; }
+  @keyframes invert { 50% { filter: invert(1); } }
 
-  .addr {
-    margin-top: 12px;
-    display: flex; align-items: center; gap: 8px;
-    font-size: 13.5px; color: var(--panel-muted);
-  }
-  .addr mark { font: 500 14px var(--mono); background: var(--butter); color: #191f06; padding: 2px 6px; }
+  .addr { margin-top: 12px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+  .addr mark { font-size: 13px; }
   .addr .grow { flex: 1; }
-  .addr select { background: transparent; border: 1px solid var(--panel-line); border-radius: 99px; color: var(--panel-ink); font-size: 12px; padding: 3px 6px; max-width: 110px; }
+  .addr select { background: var(--paper); border: 1.5px solid var(--rule); font-size: 11px; padding: 2px 4px; max-width: 100px; }
 
-  .rows { list-style: none; margin: 16px 0 0; padding: 0; }
-  .rows li {
-    display: grid; grid-template-columns: 30px 1fr; gap: 6px;
-    padding: 11px 0;
-    border-top: 1px solid var(--panel-line);
-    font-size: 14px;
+  .rows { list-style: none; margin: 14px 0 0; padding: 0; }
+  .rows li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; padding: 8px 0; border-top: 1px dashed color-mix(in srgb, var(--ink) 35%, transparent); font-size: 13px; }
+  .rows .n {
+    width: 15px; height: 15px; margin-top: 2px;
+    border: 1.5px solid var(--rule);
+    font-size: 0; display: grid; place-items: center;
   }
-  .rows .n { font-size: 12px; color: var(--panel-muted); padding-top: 2px; }
-  .rows .n.ok { color: #7bd34a; }
-  .rows .n.warn { color: var(--orange); }
-  .rows small { display: block; color: var(--panel-muted); font-size: 12.5px; margin-top: 2px; }
-  .rows mark { background: var(--butter); color: #191f06; }
+  .rows .n.ok { background: var(--ink); }
+  .rows .n.ok::after { content: ""; width: 6px; height: 3px; border: solid var(--paper); border-width: 0 0 2px 2px; transform: rotate(-45deg) translate(1px, -1px); }
+  .rows .n.warn { background: repeating-linear-gradient(45deg, var(--ink) 0 2px, transparent 2px 4px); }
+  .rows small { display: block; color: var(--muted); font-size: 11.5px; }
+  .rows mark { font-size: 11.5px; }
 
-  .connected { text-align: left; }
-  .connected .mark { margin: 6px 0 22px; }
-  .connected p { color: var(--panel-muted); margin: -6px 0 20px; font-size: 14px; }
+  .connected .content { text-align: center; padding: 24px 18px 20px; }
+  .connected .mark { margin: 0 auto 16px; }
+  .connected h2 { font-size: 17px; margin: 0 0 6px; }
+  .connected p { color: var(--muted); margin: 0 0 18px; font-size: 12.5px; }
 
-  .fw {
-    border: 1px solid var(--line); border-radius: 18px;
-    padding: 16px 18px; font-size: 14px;
-    background: var(--butter); color: #191f06;
-  }
-  .fw .head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; font-size: 17px; letter-spacing: -0.03em; }
-  .fw .head em { font-family: var(--serif); font-size: 1.1em; color: var(--orange); }
-  .fw .cmd {
-    margin-top: 10px;
-    display: flex; align-items: center; gap: 6px;
-    background: #191f06; color: var(--butter);
-    border-radius: 10px; padding: 6px 6px 6px 12px;
-    font: 500 13px var(--mono);
-  }
+  .fw .content { font-size: 12.5px; }
+  .fw b { display: block; margin-bottom: 4px; }
+  .fw .cmd { margin-top: 10px; display: flex; align-items: center; gap: 6px; background: var(--ink); color: var(--paper); padding: 6px 6px 6px 10px; font-size: 12px; }
   .fw .cmd code { flex: 1; word-break: break-all; }
+  .fw .cmd code::before { content: "$ "; opacity: .5; }
 
-  .side-actions { display: flex; flex-direction: column; gap: 0; margin-top: auto; padding-top: 10px; }
-  .danger:hover { color: var(--orange) !important; }
+  .tools .content { display: flex; flex-direction: column; gap: 2px; padding: 8px; }
+  .danger:hover { background: #b3261e !important; color: #fff !important; }
 
-  main { display: flex; flex-direction: column; min-width: 0; position: relative; }
-  .scroll { flex: 1; overflow-y: auto; padding: 4px 36px 16px; }
+  /* transfers window */
+  .main { min-height: 0; position: relative; }
+  .main .titlebar .title b { font-weight: 600; }
+  .scroll { flex: 1; overflow-y: auto; padding: 4px 22px 16px; }
   .timeline { max-width: 760px; margin: 0 auto; }
-  .uploads { max-width: 760px; width: calc(100% - 72px); margin: 0 auto; }
-  .composer { max-width: 760px; width: calc(100% - 72px); margin: 0 auto 8px; }
-  .composer textarea { max-height: 200px; font-size: 15px; }
-  .hint { text-align: center; color: var(--muted); margin: 0 0 14px; font-size: 12px; }
-  .hint em { font-family: var(--serif); font-size: 14px; }
+  .uploads { max-width: 760px; width: calc(100% - 44px); margin: 0 auto; }
+  .composer { max-width: 760px; width: calc(100% - 44px); margin: 0 auto 8px; }
+  .composer textarea { max-height: 200px; font-size: 14px; }
+  .hint { text-align: center; color: var(--muted); margin: 4px 0 12px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; }
+  .hint kbd { font: inherit; border: 1px solid currentColor; padding: 0 4px; }
 
   .drop {
-    position: absolute; inset: 16px 28px; border-radius: 24px;
-    border: 1.5px dashed var(--orange);
-    background: color-mix(in srgb, var(--bg) 90%, transparent);
+    position: absolute; inset: 40px 14px 14px; z-index: 30; pointer-events: none;
+    border: 2px dashed var(--rule);
+    background: color-mix(in srgb, var(--paper) 90%, transparent);
     display: none; place-items: center; text-align: center;
-    z-index: 30; pointer-events: none;
   }
-  .drop .big { font-size: 56px; }
-  .drop .big em { color: var(--orange); }
+  .drop .big { font-size: 22px; }
+  .drop .big::after { content: "▍"; animation: cursor 1s steps(2) infinite; }
   .drop.on { display: grid; }
 
-  @media (max-width: 880px) {
-    .body { grid-template-columns: 1fr; }
-    aside { display: none; }
-    .top { padding: 12px 18px; }
+  @media (max-width: 900px) {
+    .desk { grid-template-columns: 1fr; padding: 14px; }
+    .stack { display: none; }
   }
 </style>
 </head>
 <body>
 <div class="loader" id="loader" role="status" aria-live="polite">
-  <div class="inner">
-    <div class="orbs"><i></i><i></i></div>
-    <span class="brand">tone<i>/</i><em>fer</em></span>
-    <span class="msg" id="loaderMsg"><em>connecting</em><span class="dots"></span></span>
+  <div class="inner win">
+    <div class="titlebar"><span class="box"></span><span class="title">tonefer</span></div>
+    <div class="content">
+      <div id="loaderMark"></div>
+      <div class="bar"><i></i></div>
+      <span class="msg" id="loaderMsg"><em>starting</em><span class="dots"></span></span>
+    </div>
   </div>
 </div>
+
 <div class="page">
-  <header class="top">
+  <header class="menubar">
     <span id="brand"></span>
+    <span class="item">Transfers</span>
+    <span class="item" id="host"></span>
     <span class="grow"></span>
-    <span class="host" id="host"></span>
-    <span class="pill" id="status">no phone yet</span>
+    <span class="pill" id="status">no phone</span>
+    <span class="clock" id="clock"></span>
   </header>
 
-  <div class="body">
-    <aside>
-      <section class="panel" id="pairCard">
-        <h2 class="big">Pair <em>your</em> phone.</h2>
-        <div class="qr" id="qr"></div>
-        <div class="addr" id="addrRow" hidden>
-          <span>or type</span><mark id="addr"></mark><span class="grow"></span>
-          <select id="ipsel" title="Other network addresses" hidden></select>
-          <button class="icon-btn" id="copyAddr" title="Copy address"></button>
+  <div class="desk">
+    <div class="stack">
+      <section class="win" id="pairCard">
+        <div class="titlebar"><span class="box"></span><span class="title">Pair a phone</span></div>
+        <div class="content">
+          <div class="qr" id="qr"></div>
+          <div class="addr" id="addrRow" hidden>
+            <span>or type</span><mark id="addr"></mark><span class="grow"></span>
+            <select id="ipsel" title="Other network addresses" hidden></select>
+            <button class="icon-btn" id="copyAddr" title="Copy address"></button>
+          </div>
+          <ol class="rows">
+            <li><span class="n" id="c1"></span><div>Phone hotspot on<small>Settings → Hotspot.</small></div></li>
+            <li><span class="n" id="c2"></span><div id="c2t">Laptop joined it<small>Pick your phone in the Wi‑Fi list.</small></div></li>
+            <li><span class="n" id="c3"></span><div>Scan with the phone camera<small>Then Chrome ⋮ → <mark>Add to Home screen</mark></small></div></li>
+          </ol>
         </div>
-        <ol class="rows">
-          <li><span class="n" id="c1">01</span><div>Turn on your phone's hotspot<small>Settings → Hotspot. No Wi‑Fi router needed.</small></div></li>
-          <li><span class="n" id="c2">02</span><div id="c2t">Join it from this laptop<small>Pick your phone in the laptop's Wi‑Fi list.</small></div></li>
-          <li><span class="n" id="c3">03</span><div>Scan with the phone camera<small>Then Chrome ⋮ → <mark>Add to Home screen</mark>.</small></div></li>
-        </ol>
       </section>
 
-      <section class="panel connected" id="connCard" hidden>
-        <div id="connMark"></div>
-        <h2 class="big">Connected <em>to</em> phone.</h2>
-        <p id="connText">Anything you send shows up there instantly.</p>
-        <button class="btn orange" id="pairAnother">Pair another phone</button>
+      <section class="win connected" id="connCard" hidden>
+        <div class="titlebar"><span class="box"></span><span class="title">Connection</span></div>
+        <div class="content">
+          <div id="connMark"></div>
+          <h2 class="big">Phone connected.</h2>
+          <p id="connText">Anything you send shows up there instantly.</p>
+          <button class="btn" id="pairAnother">Pair another phone</button>
+        </div>
       </section>
 
-      <section class="fw" id="fw" hidden>
-        <div class="head"><span>Phone <em>can't</em> reach it?</span></div>
-        <span id="fwText"></span>
-        <div class="cmd"><code id="fwFix"></code><button class="icon-btn" id="copyFix" title="Copy"></button></div>
+      <section class="win fw" id="fw" hidden>
+        <div class="titlebar"><span class="box"></span><span class="title">Can't connect?</span></div>
+        <div class="content">
+          <b>Phone can't reach this laptop?</b>
+          <span id="fwText"></span>
+          <div class="cmd"><code id="fwFix"></code><button class="icon-btn" id="copyFix" title="Copy"></button></div>
+        </div>
       </section>
 
-      <div class="side-actions">
-        <button class="btn ghost" id="folder"></button>
-        <button class="btn ghost danger" id="repair"></button>
-        <button class="btn ghost danger" id="clear"></button>
-      </div>
-    </aside>
+      <section class="win tools">
+        <div class="titlebar"><span class="box"></span><span class="title">Tools</span></div>
+        <div class="content">
+          <button class="btn ghost" id="folder"></button>
+          <button class="btn ghost danger" id="repair"></button>
+          <button class="btn ghost danger" id="clear"></button>
+        </div>
+      </section>
+    </div>
 
-    <main id="main">
+    <main class="win main" id="main">
+      <div class="titlebar"><span class="box"></span><span class="title">Transfers</span></div>
       <div class="scroll" id="scroll"><div class="timeline" id="timeline"></div></div>
       <div class="uploads" id="uploads"></div>
       <form class="composer" id="composer">
         <button type="button" class="round" id="attach" title="Send photos or files"></button>
         <input type="file" id="file" multiple hidden>
-        <textarea id="text" rows="1" placeholder="Write something for your phone…"></textarea>
+        <textarea id="text" rows="1" placeholder="Type a note for your phone…"></textarea>
         <button class="round send" id="sendBtn" disabled title="Send"></button>
       </form>
-      <div class="hint">Enter to send — <em>drop</em> files anywhere — Ctrl+V pastes images</div>
-      <div class="drop" id="drop"><div class="big">Let <em>go.</em></div></div>
+      <div class="hint"><kbd>Enter</kbd> send · drop files anywhere · <kbd>Ctrl+V</kbd> paste image</div>
+      <div class="drop" id="drop"><div class="big">Drop to send</div></div>
     </main>
   </div>
 </div>
@@ -193,7 +193,7 @@
   <div>
     <img id="viewerImg" alt="">
     <div class="bar">
-      <button class="btn orange" id="viewerSave"></button>
+      <button class="btn primary" id="viewerSave"></button>
       <button class="btn" id="viewerClose">Close</button>
     </div>
   </div>
