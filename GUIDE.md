@@ -149,7 +149,7 @@ The Android app (repository **tonefer-android**) adds:
 - **Background connection** with notifications
 - **Customisation:** theme, text size, auto-save photos, auto-copy notes, image quality, notifications
 
-**Install:** download the latest `tonefer-x.y.z.apk` from **github.com/pankqx/tonefer-android/releases** and open it on the phone. Allow *Install unknown apps* for your browser when asked.
+**Install:** on the phone, open **https://github.com/pankqx/tonefer-android/releases/latest/download/tonefer.apk**, then open the downloaded file. Allow *Install unknown apps* for your browser when asked.
 
 ---
 
