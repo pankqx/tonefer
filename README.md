@@ -5,7 +5,7 @@ Send photos, files and messages between your phone and laptop — privately, wit
 - **Works without Wi‑Fi.** Turn on your phone's hotspot and connect the laptop to it. The two devices talk directly over that link. Local transfers don't use mobile data.
 - **End-to-end encrypted.** Pairing is a one-time QR scan that shares a 256-bit key. Every message and file is sealed with it (XSalsa20‑Poly1305). Anything that doesn't decrypt is rejected.
 - **Keeps history.** Everything you send either way stays in a timeline on both devices. Files land in `~/Tonefer/Received` and `~/Tonefer/Sent`.
-- **Minimal.** One timeline, one composer, drag‑and‑drop, paste.
+- **Cute but calm.** One timeline, one composer, drag‑and‑drop, paste, and Tono the mascot.
 
 ## Run it
 
@@ -28,7 +28,17 @@ The first run creates a virtual environment and installs four packages (`aiohttp
 
 From then on: start tonefer on the laptop, open it on the phone, done.
 
-If the laptop gets a different address on the hotspot later, just scan again. To revoke every phone, use **Unpair all phones**.
+The QR code updates by itself whenever the laptop changes networks, so always scan the one on screen right now. To revoke every phone, use **Unpair all phones**.
+
+## Phone says "This site can't be reached"
+
+Work through these in order:
+
+1. **The laptop is on the phone's hotspot.** The pairing card shows which Wi‑Fi the laptop is on.
+2. **Allow the port through Ubuntu's firewall.** `run.sh` offers to do this for you. To do it by hand: `sudo ufw allow 8765/tcp`
+3. **On Windows, set the hotspot network to Private.** Go to Settings → Network & internet → Wi‑Fi → your hotspot → Private network. Then allow Python when the firewall asks.
+4. **Type the address yourself.** The card shows it under the QR code, for example `192.168.43.12:8765`. Type it into Chrome on the phone.
+5. **Run the doctor.** `./run.sh doctor` (or `python server.py --doctor`) lists the addresses, the Wi‑Fi name and any firewall in the way.
 
 ## How it's built
 

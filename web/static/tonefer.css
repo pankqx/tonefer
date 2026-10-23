@@ -98,6 +98,10 @@ a { color: inherit; }
 .tono.happy .mouth-sad { display: none; }
 .tono:not(.sad) .mouth-sad { display: none; }
 .tono.sad .mouth-happy { display: none; }
+.night .tono rect, .night .tono > path:first-child { stroke: #faf5f0; }
+@media (prefers-color-scheme: dark) {
+  .tono rect, .tono > path:first-child { stroke: #faf5f0; }
+}
 @keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
 @keyframes bob { 50% { transform: translateY(-6px) rotate(-2deg); } }
 
@@ -218,6 +222,7 @@ a { color: inherit; }
   text-transform: uppercase;
   flex: none;
 }
+.card.mine .file-row .badge { background: var(--mine-ink); color: var(--mine); }
 .file-row .name { font-weight: 600; word-break: break-all; }
 .file-row .size { font-size: 12px; opacity: .6; }
 
