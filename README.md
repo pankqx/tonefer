@@ -35,15 +35,13 @@ Most phone-to-laptop tools go through someone else's server, need an account, or
   <img src="docs/screenshots/phone-welcome.png" alt="Pairing on the phone" width="260">
 </p>
 
-## Quick start (Ubuntu)
+## Install
 
-```bash
-sudo apt install -y git python3 python3-venv
-git clone https://github.com/pankqx/tonefer.git ~/tonefer
-cd ~/tonefer && ./scripts/install-ubuntu.sh --hotspot "Your Hotspot Name"
-```
+**Ubuntu:** download **[tonefer.deb](https://github.com/pankqx/tonefer/releases/latest/download/tonefer.deb)**, double-click to install, and open **Tonefer** from your apps. It runs in its own window and keeps receiving in the background.
 
-Then open **Tonefer** from the app launcher and scan the code with your phone. The full walkthrough, including Windows, updates and troubleshooting, is in **[GUIDE.md](GUIDE.md)**.
+**Android:** install **[tonefer.apk](https://github.com/pankqx/tonefer-android/releases/latest/download/tonefer.apk)** and scan the pairing code.
+
+**From source / Windows:** see the **[user guide](GUIDE.md)**.
 
 ## How it works
 
@@ -69,6 +67,8 @@ netinfo.py             Address selection, Wi‑Fi name, firewall detection, doct
 web/desk/              Laptop interface (Transfers · Instructions)
 web/phone/             Phone web interface
 web/static/            Shared CSS/JS, tweetnacl, IBM Plex Mono (all offline)
+desktop/tonefer_app.py Ubuntu app window (GTK + WebKit)
+packaging/build-deb.sh Builds the .deb (CI builds, installs and tests it on every push)
 scripts/               One-click install / uninstall / launcher (Ubuntu)
 docs/PROTOCOL.md       Wire protocol (used by the Android app)
 ```
@@ -86,6 +86,7 @@ Configuration (environment variables): `TONEFER_PORT` (8765), `TONEFER_FILES` (`
 - [x] One-click Ubuntu setup: background service, launcher, hotspot auto-join
 - [x] Instructions tab and phone help
 - [x] Native Android app with share target and customisation
+- [x] Ubuntu app (.deb) with its own window
 - [ ] Windows installer (single `.exe`)
 - [ ] Chunked streaming for very large files
 - [ ] Clipboard sync (quick-settings tile)

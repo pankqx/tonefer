@@ -7,8 +7,8 @@ This guide takes you from download to everyday one-click use. No Git or programm
 ## Contents
 
 1. [Requirements](#1-requirements)
-2. [Install on Ubuntu](#2-install-on-ubuntu)
-3. [One-click setup (recommended)](#3-one-click-setup-recommended)
+2. [Install on Ubuntu (app)](#2-install-on-ubuntu)
+3. [One-click setup (source install)](#3-one-click-setup-only-for-option-b)
 4. [Pair your phone](#4-pair-your-phone)
 5. [Everyday use](#5-everyday-use)
 6. [Connection options, auto hotspot & speed](#6-connection-options)
@@ -33,26 +33,31 @@ This guide takes you from download to everyday one-click use. No Git or programm
 
 ## 2. Install on Ubuntu
 
-Open a terminal (**Ctrl + Alt + T**) and run:
+### Option A — Install the app (recommended)
+
+1. Download **[tonefer.deb](https://github.com/pankqx/tonefer/releases/latest/download/tonefer.deb)**.
+2. Double-click it and choose **Install** (App Center). Or in a terminal:
+   ```bash
+   sudo apt install ~/Downloads/tonefer.deb
+   ```
+3. Open **Tonefer** from your apps (press <kbd>Super</kbd> and type *Tonefer*). Right-click its icon in the dock → **Pin to Dash** to keep it there.
+
+That's all. Tonefer runs in its own window and keeps working in the background when the window is closed, so photos still arrive. It starts by itself every time you log in, and the firewall is opened during install.
+
+> **Already used `./run.sh` or the install script?** Remove the old setup first so the two don't clash: `cd ~/tonefer && ./scripts/uninstall-ubuntu.sh`. Your pairing and history are kept.
+
+### Option B — Run from source (for developers)
 
 ```bash
 sudo apt update
 sudo apt install -y git python3 python3-venv
 git clone https://github.com/pankqx/tonefer.git ~/tonefer
+cd ~/tonefer && ./run.sh
 ```
-
-<details>
-<summary>Prefer not to use Git? Download the ZIP instead.</summary>
-
-1. Open **github.com/pankqx/tonefer**.
-2. Click **Code → Download ZIP**.
-3. Extract it into your home folder and rename the folder to `tonefer`.
-
-</details>
 
 ---
 
-## 3. One-click setup (recommended)
+## 3. One-click setup (only for Option B)
 
 Run this **once**:
 
@@ -157,7 +162,7 @@ With this set up, sharing works even when the hotspot is off:
    cd ~/tonefer
    ./scripts/install-ubuntu.sh --hotspot "Your Hotspot Name"
    ```
-   Or, in Tonefer on the laptop, open the **Auto-join hotspot** window, pick the hotspot and leave the switch on.
+   Or, in Tonefer on the laptop (the only way with the app install), open the **Auto-join hotspot** window, pick the hotspot and leave the switch on.
 
 From then on, Tonefer checks every few seconds. When the hotspot appears, the laptop joins it, even if it's connected to other Wi‑Fi.
 
@@ -198,13 +203,12 @@ The Android app (repository **tonefer-android**) adds:
 
 ## 8. Updating
 
-```bash
-cd ~/tonefer
-git pull
-systemctl --user restart tonefer   # only if you ran the one-click setup
-```
-
-If you used the ZIP, download it again and replace the folder. History and pairing are kept, because they live in `~/.tonefer`.
+- **App (Option A):** download the latest **tonefer.deb** and install it again. Your settings, pairing and history are kept.
+- **Source (Option B):**
+  ```bash
+  cd ~/tonefer && git pull
+  systemctl --user restart tonefer   # if you ran the one-click setup
+  ```
 
 ---
 
@@ -233,12 +237,10 @@ To see the background service's log: `journalctl --user -u tonefer -n 50`
 
 ## 11. Uninstall
 
-```bash
-cd ~/tonefer
-./scripts/uninstall-ubuntu.sh
-```
+- **App:** `sudo apt remove tonefer`, or remove it in App Center.
+- **Source setup:** `cd ~/tonefer && ./scripts/uninstall-ubuntu.sh`
 
-This removes the background service and launcher. Your files (`~/Tonefer`) and pairing (`~/.tonefer`) are kept. Delete those folders to remove everything.
+Your files (`~/Tonefer`) and pairing (`~/.tonefer`) are kept. Delete those folders to remove everything.
 
 ---
 
