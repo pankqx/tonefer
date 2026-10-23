@@ -59,6 +59,14 @@ def run_server() -> None:
 def _serve() -> None:
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
+
+    def quiet(loop, ctx):
+        # A phone leaving the hotspot resets its connection; that's normal, not an error.
+        if isinstance(ctx.get("exception"), (ConnectionResetError, ConnectionAbortedError)):
+            return
+        loop.default_exception_handler(ctx)
+
+    loop.set_exception_handler(quiet)
     from aiohttp import web
     app = server.Tonefer().build()
     runner = web.AppRunner(app, access_log=None)
