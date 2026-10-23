@@ -244,6 +244,12 @@
   $("viewerClose").onclick = () => $("viewer").classList.remove("open");
   $("viewer").onclick = (e) => { if (e.target === $("viewer")) $("viewer").classList.remove("open"); };
 
+  // ---------------- instructions sheet ----------------
+  const closeHelp = () => { $("help").hidden = true; };
+  $("helpBtn").onclick = () => { $("help").hidden = false; };
+  $("helpClose").onclick = $("helpOk").onclick = closeHelp;
+  $("help").onclick = (e) => { if (e.target === $("help")) closeHelp(); };
+
   // A new pairing link opened in an already-open tab only changes the hash.
   window.addEventListener("hashchange", () => { if (/k=/.test(location.hash)) location.reload(); });
 

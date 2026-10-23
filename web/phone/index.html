@@ -36,6 +36,21 @@
   .composer textarea { max-height: 140px; font-size: 16px; }
   .round { width: 42px; height: 42px; }
 
+  .menubar .right { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .help-btn { width: 30px; height: 30px; font-weight: 600; font-size: 14px; box-shadow: var(--hard-sm); }
+  .sheet {
+    position: fixed; inset: 0; z-index: 55;
+    background: color-mix(in srgb, var(--desk) 85%, transparent);
+    display: flex; align-items: flex-end;
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+  }
+  .sheet .win { width: 100%; max-height: 86dvh; overflow-y: auto; }
+  .sheet .box { cursor: pointer; }
+  .hrows { list-style: none; margin: 0 0 16px; padding: 0; }
+  .hrows li { padding: 9px 0; border-bottom: 1px dashed color-mix(in srgb, var(--ink) 35%, transparent); font-size: 13px; color: var(--muted); }
+  .hrows b { display: block; color: var(--ink); }
+  .hrows kbd { font: inherit; border: 1.5px solid currentColor; padding: 0 4px; }
+
   /* not paired yet */
   .welcome {
     min-height: 100dvh; display: flex; flex-direction: column; justify-content: center;
@@ -88,7 +103,10 @@
 <div class="app" id="app" hidden>
   <header class="menubar">
     <div id="brand"></div>
-    <span class="pill" id="status">connecting</span>
+    <div class="right">
+      <span class="pill" id="status">connecting</span>
+      <button class="round help-btn" id="helpBtn" aria-label="Instructions">?</button>
+    </div>
   </header>
   <div class="offline" id="offline" hidden><b>Can't reach your laptop.</b>Is tonefer running there, and is the laptop still on this phone's hotspot?</div>
   <div class="scroll" id="scroll"><div class="timeline" id="timeline"></div></div>
@@ -99,6 +117,23 @@
     <textarea id="text" rows="1" placeholder="Note to laptop…"></textarea>
     <button class="round send" id="sendBtn" aria-label="Send" disabled></button>
   </form>
+</div>
+
+<div class="sheet" id="help" hidden>
+  <div class="win">
+    <div class="titlebar"><span class="box" id="helpClose" role="button" aria-label="Close"></span><span class="title">Instructions</span></div>
+    <div class="content">
+      <ol class="hrows">
+        <li><b>Send a note</b>Type below and tap the arrow.</li>
+        <li><b>Send photos or files</b>Tap <kbd>+</kbd> and pick them.</li>
+        <li><b>Copy a note</b>Tap the copy icon on the message.</li>
+        <li><b>Save a photo</b>Tap it, then <i>Save</i>. It goes to Downloads.</li>
+        <li><b>Can't connect?</b>Keep the laptop on this phone's hotspot (or use USB tethering), and make sure Tonefer is running on the laptop.</li>
+        <li><b>Want more?</b>The Android app adds <i>Share → Tonefer</i>, background notifications and settings.</li>
+      </ol>
+      <button class="btn primary" id="helpOk" style="width:100%">Got it</button>
+    </div>
+  </div>
 </div>
 
 <div class="viewer" id="viewer">

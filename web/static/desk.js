@@ -145,6 +145,7 @@
         items.push(m.item);
         draw();
         if (m.item.origin === "phone") {
+          if (!$("paneHelp").hidden) showTab("transfers");
           toast(m.item.kind === "text" ? "New note from your phone" : `Got ${m.item.name}`);
           ping();
         }
@@ -261,7 +262,32 @@
   $("viewerSave").onclick = () => opts.download(viewing);
   window.addEventListener("keydown", (e) => { if (e.key === "Escape") closeViewer(); });
 
+  // ---- tabs: Transfers | Instructions ----
+  function showTab(name) {
+    const help = name === "help";
+    $("paneTransfers").hidden = help;
+    $("paneHelp").hidden = !help;
+    $("tabTransfers").setAttribute("aria-selected", String(!help));
+    $("tabHelp").setAttribute("aria-selected", String(help));
+    $("menuTransfers").classList.toggle("on", !help);
+    $("menuHelp").classList.toggle("on", help);
+    try { localStorage.setItem("tonefer.tab", name); } catch (_) {}
+    if (!help) ta.focus();
+  }
+  $("tabTransfers").onclick = $("menuTransfers").onclick = () => showTab("transfers");
+  $("tabHelp").onclick = $("menuHelp").onclick = () => showTab("help");
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "F1") { e.preventDefault(); showTab($("paneHelp").hidden ? "help" : "transfers"); }
+  });
+  document.querySelectorAll(".toc a").forEach((a) => a.addEventListener("click", (e) => {
+    e.preventDefault();
+    document.querySelector(a.getAttribute("href")).scrollIntoView({ behavior: "smooth" });
+  }));
+  let savedTab = "transfers";
+  try { savedTab = localStorage.getItem("tonefer.tab") || "transfers"; } catch (_) {}
+
   layout();
   loadPair(true);
+  showTab(savedTab);
   ta.focus();
 })();

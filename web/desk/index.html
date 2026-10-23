@@ -21,7 +21,9 @@
     font-size: 13px;
   }
   .menubar .grow { flex: 1; }
-  .menubar .item { color: var(--muted); }
+  .menubar .item { color: var(--muted); background: none; border: 0; padding: 4px 8px; font-size: 13px; }
+  button.item:hover, button.item.on { background: var(--ink); color: var(--paper); }
+  .menubar .host { padding-left: 0; }
   .menubar .clock { font-weight: 500; min-width: 48px; text-align: right; }
 
   .desk {
@@ -78,7 +80,46 @@
 
   /* transfers window */
   .main { min-height: 0; position: relative; }
-  .main .titlebar .title b { font-weight: 600; }
+  .titlebar.tabs { justify-content: center; gap: 0; }
+  .tab {
+    position: relative; z-index: 1;
+    background: var(--paper); border: 0; margin: 0 2px;
+    padding: 0 12px; height: 22px;
+    font-size: 12px; font-weight: 500; color: var(--muted);
+  }
+  .tab[aria-selected="true"] { color: var(--paper); background: var(--ink); font-weight: 600; }
+  .tab:hover:not([aria-selected="true"]) { color: var(--ink); }
+  .pane { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
+
+  /* instructions document */
+  .help { overflow-y: auto; }
+  .doc { max-width: 720px; margin: 0 auto; padding: 30px 28px 60px; font-size: 13.5px; line-height: 1.7; }
+  .doc-head { border-bottom: 1.5px solid var(--rule); padding-bottom: 22px; margin-bottom: 8px; }
+  .doc-head h1 { font-size: 30px; margin: 6px 0 8px; }
+  .doc-head p { color: var(--muted); margin: 0 0 16px; }
+  .toc { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 18px; }
+  .toc a { text-decoration: none; padding: 3px 6px; margin-left: -6px; }
+  .toc a:hover { background: var(--ink); color: var(--paper); }
+  .doc section { padding: 22px 0 6px; border-bottom: 1px dashed color-mix(in srgb, var(--ink) 35%, transparent); scroll-margin-top: 12px; }
+  .doc h2 { font-size: 16px; margin: 0 0 12px; display: flex; gap: 12px; align-items: baseline; }
+  .doc h2 span { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .doc ol.steps { padding-left: 20px; margin: 0; }
+  .doc ol.steps > li { margin-bottom: 10px; padding-left: 4px; }
+  .doc ol.steps ul { padding-left: 16px; margin: 6px 0 0; list-style: square; }
+  .doc ul.ticks { list-style: none; padding: 0; margin: 10px 0; }
+  .doc ul.ticks li { padding-left: 22px; position: relative; margin-bottom: 4px; }
+  .doc ul.ticks li::before { content: "[x]"; position: absolute; left: 0; font-size: 11px; top: 1px; color: var(--muted); }
+  .doc pre { background: var(--ink); color: var(--paper); padding: 10px 14px; margin: 10px 0; overflow-x: auto; }
+  .doc pre code::before { content: "$ "; opacity: .5; }
+  .doc code { font: inherit; font-size: 12.5px; background: color-mix(in srgb, var(--ink) 9%, transparent); padding: 1px 5px; }
+  .doc pre code { background: none; padding: 0; }
+  .doc .note { color: var(--muted); font-size: 12.5px; border-left: 3px solid var(--ink); padding-left: 12px; }
+  .doc table.keys { width: 100%; border-collapse: collapse; }
+  .doc table.keys td { border-top: 1px solid color-mix(in srgb, var(--ink) 20%, transparent); padding: 8px 10px 8px 0; vertical-align: top; }
+  .doc table.keys td:first-child { font-weight: 600; width: 34%; }
+  .doc kbd, .hint kbd { font: inherit; font-size: 11px; border: 1.5px solid currentColor; padding: 0 5px; box-shadow: 1px 1px 0 currentColor; }
+  .doc dl.faq dt { font-weight: 600; margin-top: 12px; }
+  .doc dl.faq dd { margin: 2px 0 0; color: var(--muted); }
   .scroll { flex: 1; overflow-y: auto; padding: 4px 22px 16px; }
   .timeline { max-width: 760px; margin: 0 auto; }
   .uploads { max-width: 760px; width: calc(100% - 44px); margin: 0 auto; }
@@ -118,8 +159,9 @@
 <div class="page">
   <header class="menubar">
     <span id="brand"></span>
-    <span class="item">Transfers</span>
-    <span class="item" id="host"></span>
+    <button class="item" id="menuTransfers">Transfers</button>
+    <button class="item" id="menuHelp">Instructions</button>
+    <span class="item host" id="host"></span>
     <span class="grow"></span>
     <span class="pill" id="status">no phone</span>
     <span class="clock" id="clock"></span>
@@ -174,17 +216,120 @@
     </div>
 
     <main class="win main" id="main">
-      <div class="titlebar"><span class="box"></span><span class="title">Transfers</span></div>
-      <div class="scroll" id="scroll"><div class="timeline" id="timeline"></div></div>
-      <div class="uploads" id="uploads"></div>
-      <form class="composer" id="composer">
-        <button type="button" class="round" id="attach" title="Send photos or files"></button>
-        <input type="file" id="file" multiple hidden>
-        <textarea id="text" rows="1" placeholder="Type a note for your phone…"></textarea>
-        <button class="round send" id="sendBtn" disabled title="Send"></button>
-      </form>
-      <div class="hint"><kbd>Enter</kbd> send · drop files anywhere · <kbd>Ctrl+V</kbd> paste image</div>
-      <div class="drop" id="drop"><div class="big">Drop to send</div></div>
+      <div class="titlebar tabs" role="tablist">
+        <span class="box"></span>
+        <button class="tab" role="tab" id="tabTransfers" aria-selected="true">Transfers</button>
+        <button class="tab" role="tab" id="tabHelp" aria-selected="false">Instructions</button>
+      </div>
+
+      <div class="pane" id="paneTransfers">
+        <div class="scroll" id="scroll"><div class="timeline" id="timeline"></div></div>
+        <div class="uploads" id="uploads"></div>
+        <form class="composer" id="composer">
+          <button type="button" class="round" id="attach" title="Send photos or files"></button>
+          <input type="file" id="file" multiple hidden>
+          <textarea id="text" rows="1" placeholder="Type a note for your phone…"></textarea>
+          <button class="round send" id="sendBtn" disabled title="Send"></button>
+        </form>
+        <div class="hint"><kbd>Enter</kbd> send · drop files anywhere · <kbd>Ctrl+V</kbd> paste image · <kbd>F1</kbd> instructions</div>
+        <div class="drop" id="drop"><div class="big">Drop to send</div></div>
+      </div>
+
+      <div class="pane help" id="paneHelp" hidden>
+        <article class="doc">
+          <header class="doc-head">
+            <span class="label">Tonefer · user manual</span>
+            <h1 class="big">Instructions</h1>
+            <p>Everything you need to connect your phone and laptop and move notes, photos and files between them. Private, encrypted and offline.</p>
+            <nav class="toc">
+              <a href="#h-first">01 First-time setup</a>
+              <a href="#h-oneclick">02 One-click everyday use</a>
+              <a href="#h-send">03 Sending and receiving</a>
+              <a href="#h-android">04 Android app</a>
+              <a href="#h-trouble">05 Troubleshooting</a>
+              <a href="#h-security">06 Privacy and security</a>
+            </nav>
+          </header>
+
+          <section id="h-first">
+            <h2><span>01</span> First-time setup</h2>
+            <ol class="steps">
+              <li><b>Connect the two devices.</b> Use one of these:
+                <ul>
+                  <li><b>Phone hotspot:</b> phone Settings → Hotspot → on. Then join that network from this laptop.</li>
+                  <li><b>USB tethering</b> (fastest): plug the phone into the laptop and turn on Settings → Hotspot &amp; tethering → <i>USB tethering</i>.</li>
+                  <li><b>Same Wi‑Fi:</b> any network both devices are on also works.</li>
+                </ul>
+              </li>
+              <li><b>Scan the code.</b> Point the phone camera at the QR code in the <i>Pair a phone</i> window, then open the link. If scanning fails, type the address shown under the code into Chrome.</li>
+              <li><b>Keep it handy.</b> In Chrome on the phone, choose ⋮ → <i>Add to Home screen</i>. Or install the Android app (section 04).</li>
+            </ol>
+            <p class="note">You only pair once. The code updates itself if the laptop changes network.</p>
+          </section>
+
+          <section id="h-oneclick">
+            <h2><span>02</span> One-click everyday use</h2>
+            <p>Run the installer once from the Tonefer folder:</p>
+            <pre><code>./scripts/install-ubuntu.sh</code></pre>
+            <ul class="ticks">
+              <li>Starts Tonefer automatically when you log in, so there's no terminal needed.</li>
+              <li>Adds <b>Tonefer</b> to your app launcher. One click opens this window.</li>
+              <li>Opens the firewall port, once.</li>
+              <li>Optionally makes the laptop join your phone's hotspot automatically, ahead of other Wi‑Fi.</li>
+            </ul>
+            <p>After that, your daily routine is: <b>turn on the hotspot → tap Tonefer on the phone.</b> The laptop side is already running.</p>
+            <p class="note">To undo everything: <code>./scripts/uninstall-ubuntu.sh</code></p>
+          </section>
+
+          <section id="h-send">
+            <h2><span>03</span> Sending and receiving</h2>
+            <table class="keys">
+              <tr><td>Send a note</td><td>Type below, press <kbd>Enter</kbd> (<kbd>Shift+Enter</kbd> for a new line)</td></tr>
+              <tr><td>Send photos or files</td><td>Drag them onto this window, click <kbd>+</kbd>, or paste with <kbd>Ctrl+V</kbd></td></tr>
+              <tr><td>Copy a received note</td><td>Click the copy icon on the message</td></tr>
+              <tr><td>Open or save a photo</td><td>Click it, then <i>Save</i></td></tr>
+              <tr><td>Find received files</td><td>Tools → <i>Open Tonefer folder</i> (<code>~/Tonefer/Received</code>)</td></tr>
+              <tr><td>Remove an item</td><td>The bin icon removes it from history on both devices</td></tr>
+            </table>
+          </section>
+
+          <section id="h-android">
+            <h2><span>04</span> Android app</h2>
+            <p>The Android app adds what a web page can't:</p>
+            <ul class="ticks">
+              <li><b>Share → Tonefer</b> from Gallery, Files or any app.</li>
+              <li>Finds the laptop automatically, even when its address changes.</li>
+              <li>Stays connected in the background, with notifications.</li>
+              <li>Options for theme, auto-saving photos, auto-copying notes and image quality.</li>
+            </ul>
+            <p>Install the APK from the <i>tonefer-android</i> releases page, open it, and tap <i>Scan pairing code</i>.</p>
+          </section>
+
+          <section id="h-trouble">
+            <h2><span>05</span> Troubleshooting</h2>
+            <dl class="faq">
+              <dt>Phone says "This site can't be reached"</dt>
+              <dd>Check that the laptop is on the phone's hotspot (the <i>Pair a phone</i> window shows the network). Then open the firewall: <code>sudo ufw allow 8765/tcp</code></dd>
+              <dt>The QR code opens but nothing loads</dt>
+              <dd>Make sure Tonefer is still running on the laptop. Then type the address under the code into Chrome.</dd>
+              <dt>The phone shows "Unpaired"</dt>
+              <dd>Someone used <i>Unpair all phones</i>. Scan the new code.</dd>
+              <dt>Still stuck?</dt>
+              <dd>Run <code>./run.sh doctor</code> in the Tonefer folder. It lists the addresses, the network and any firewall in the way.</dd>
+            </dl>
+          </section>
+
+          <section id="h-security">
+            <h2><span>06</span> Privacy and security</h2>
+            <ul class="ticks">
+              <li>Everything stays on your local network. There are no servers, accounts or cloud.</li>
+              <li>Every message and file is end-to-end encrypted (XSalsa20‑Poly1305) with a 256‑bit key shared only by the QR scan.</li>
+              <li>This window only works on this laptop. Other devices can't open it.</li>
+              <li><i>Unpair all phones</i> changes the key immediately.</li>
+            </ul>
+          </section>
+        </article>
+      </div>
     </main>
   </div>
 </div>
