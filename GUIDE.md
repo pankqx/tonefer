@@ -7,7 +7,7 @@ This guide takes you from download to everyday one-click use. No Git or programm
 ## Contents
 
 1. [Requirements](#1-requirements)
-2. [Install on Ubuntu (app)](#2-install-on-ubuntu)
+2. [Install: Ubuntu app, Windows app, browser, Android](#2-install--choose-how-you-want-to-use-it)
 3. [One-click setup (source install)](#3-one-click-setup-only-for-option-b)
 4. [Pair your phone](#4-pair-your-phone)
 5. [Everyday use](#5-everyday-use)
@@ -31,33 +31,54 @@ This guide takes you from download to everyday one-click use. No Git or programm
 
 ---
 
-## 2. Install on Ubuntu
+## 2. Install — choose how you want to use it
 
-### Option A — Install the app (recommended)
+Tonefer always runs on the laptop. Pick any of these; they all share the same pairing, history and files.
 
-1. Download **[tonefer.deb](https://github.com/pankqx/tonefer/releases/latest/download/tonefer.deb)**.
-2. Double-click it and choose **Install** (App Center). Or in a terminal:
-   ```bash
-   sudo apt install ~/Downloads/tonefer.deb
-   ```
-3. Open **Tonefer** from your apps (press <kbd>Super</kbd> and type *Tonefer*). Right-click its icon in the dock → **Pin to Dash** to keep it there.
+| Where | How | Best for |
+|---|---|---|
+| **Ubuntu app** | [tonefer.deb](https://github.com/pankqx/tonefer/releases/latest/download/tonefer.deb) | Everyday use on Ubuntu: own window, starts at login |
+| **Windows app** | [ToneferSetup.exe](https://github.com/pankqx/tonefer/releases/latest/download/ToneferSetup.exe) | Everyday use on Windows 10/11: tray icon, starts at sign-in |
+| **Laptop browser** | Any browser at `http://127.0.0.1:8765/desk` | People who'd rather not install an app window |
+| **Android app** | [tonefer.apk](https://github.com/pankqx/tonefer-android/releases/latest/download/tonefer.apk) | The phone side (or use Chrome on the phone, no install) |
 
-That's all. Tonefer runs in its own window and keeps working in the background when the window is closed, so photos still arrive. It starts by itself every time you log in, and the firewall is opened during install.
+### Ubuntu app
 
-> **Already used `./run.sh` or the install script?** Remove the old setup first so the two don't clash: `cd ~/tonefer && ./scripts/uninstall-ubuntu.sh`. Your pairing and history are kept.
+1. Download **tonefer.deb**, double-click it and choose **Install** (or `sudo apt install ~/Downloads/tonefer.deb`).
+2. Press <kbd>Super</kbd>, type **Tonefer**, open it. Right-click the dock icon → **Pin to Dash**.
+3. Prefer your browser? Right-click the Tonefer icon → **Open in browser**.
 
-### Option B — Run from source (for developers)
+Tonefer keeps running in the background when the window is closed, so photos still arrive. It starts at every login, and the firewall is opened during install.
+
+> **Used `./run.sh` or the install script before?** Run `cd ~/tonefer && ./scripts/uninstall-ubuntu.sh` first so the two setups don't clash. Pairing and history are kept.
+
+### Windows app
+
+1. Download **ToneferSetup.exe** and run it. Keep **Start Tonefer when I sign in** ticked.
+2. Open **Tonefer** from the Start menu. It opens in its own window, and a **Tonefer icon appears in the system tray** (bottom-right, near the clock).
+3. The tray icon menu has **Open Tonefer**, **Open in browser**, **Start with Windows** (on/off) and **Quit Tonefer**.
+
+The installer also adds a firewall rule so your phone can reach the PC. If Windows SmartScreen says *"Windows protected your PC"*, choose **More info → Run anyway**. That appears for new apps that aren't code-signed.
+
+**No install?** Download **Tonefer-portable.zip**, extract it and run `Tonefer.exe`. Allow it on Private and Public networks when Windows Firewall asks.
+
+### Laptop browser (no app window)
+
+The browser version is the same Tonefer. While Tonefer is running on the laptop (Ubuntu app, Windows app, or `./run.sh`), open **http://127.0.0.1:8765/desk** in Chrome, Firefox, Edge or Brave and bookmark it.
+
+Without installing anything, from source:
 
 ```bash
-sudo apt update
 sudo apt install -y git python3 python3-venv
 git clone https://github.com/pankqx/tonefer.git ~/tonefer
-cd ~/tonefer && ./run.sh
+cd ~/tonefer && ./run.sh        # opens your browser automatically
 ```
+
+On Windows from source: install Python 3, download the ZIP from GitHub, and double-click `run.bat`.
 
 ---
 
-## 3. One-click setup (only for Option B)
+## 3. One-click setup (only when running from source on Ubuntu)
 
 Run this **once**:
 
@@ -203,21 +224,23 @@ The Android app (repository **tonefer-android**) adds:
 
 ## 8. Updating
 
-- **App (Option A):** download the latest **tonefer.deb** and install it again. Your settings, pairing and history are kept.
-- **Source (Option B):**
-  ```bash
-  cd ~/tonefer && git pull
-  systemctl --user restart tonefer   # if you ran the one-click setup
-  ```
+- **Ubuntu app:** install the newest **tonefer.deb** over the old one.
+- **Windows app:** run the newest **ToneferSetup.exe**. It replaces the old version.
+- **Android:** install the newest **tonefer.apk** over the old one.
+- **From source:** `cd ~/tonefer && git pull`
+
+Settings, pairing and history are always kept.
 
 ---
 
 ## 9. Windows
 
-1. Install Python 3 from **python.org**, ticking **Add Python to PATH**.
-2. Download the ZIP (section 2) and extract it.
-3. Double-click **`run.bat`**. When Windows Firewall asks, allow **Private networks**.
-4. Set up automatic hotspot connection and start-up as in **section 6a → Windows setup**.
+Install **ToneferSetup.exe** (section 2). Then:
+
+1. Join your phone's hotspot once. In **Settings → Network & internet → Wi‑Fi → Manage known networks → your hotspot**, turn on **Connect automatically when in range**.
+2. In Tonefer, open the **Auto-join hotspot** window and pick the hotspot.
+
+The installer handles the firewall rule and start-up.
 
 ---
 
@@ -237,7 +260,8 @@ To see the background service's log: `journalctl --user -u tonefer -n 50`
 
 ## 11. Uninstall
 
-- **App:** `sudo apt remove tonefer`, or remove it in App Center.
+- **Ubuntu app:** `sudo apt remove tonefer` (or remove it in App Center).
+- **Windows app:** Settings → Apps → Installed apps → Tonefer → Uninstall.
 - **Source setup:** `cd ~/tonefer && ./scripts/uninstall-ubuntu.sh`
 
 Your files (`~/Tonefer`) and pairing (`~/.tonefer`) are kept. Delete those folders to remove everything.

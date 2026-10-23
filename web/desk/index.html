@@ -284,7 +284,7 @@
               <a href="#h-trouble">05 Troubleshooting</a>
               <a href="#h-security">06 Privacy and security</a>
               <a href="#h-speed">07 Transfer speed</a>
-              <a href="#h-windows">08 Windows</a>
+              <a href="#h-windows">08 Apps &amp; browser</a>
             </nav>
           </header>
 
@@ -377,13 +377,18 @@
           </section>
 
           <section id="h-windows">
-            <h2><span>08</span> Windows</h2>
+            <h2><span>08</span> Ubuntu app, Windows app or browser</h2>
+            <table class="keys">
+              <tr><td>Ubuntu app</td><td>Install <code>tonefer.deb</code>, then open <b>Tonefer</b> from your apps. Right-click the icon for <i>Open in browser</i>.</td></tr>
+              <tr><td>Windows app</td><td>Run <code>ToneferSetup.exe</code>. Tonefer lives in the system tray: <i>Open Tonefer</i>, <i>Open in browser</i>, <i>Start with Windows</i>, <i>Quit</i>.</td></tr>
+              <tr><td>Any browser</td><td>While Tonefer is running, open <code>http://127.0.0.1:8765/desk</code>. It's the same app with the same history.</td></tr>
+              <tr><td>Android</td><td>Install <code>tonefer.apk</code>, or use Chrome on the phone with no install.</td></tr>
+            </table>
+            <p>Downloads: <i>github.com/pankqx/tonefer/releases/latest</i></p>
+            <h3>Windows hotspot auto-join</h3>
             <ol class="steps">
-              <li>Install Python 3 from <i>python.org</i> (tick <i>Add Python to PATH</i>), then double-click <code>run.bat</code>.</li>
-              <li>When Windows Firewall asks, allow <b>Private networks</b>.</li>
-              <li>Join the phone's hotspot once. In Settings → Network &amp; internet → Wi‑Fi → <i>your hotspot</i>, turn on <b>Connect automatically when in range</b> and choose <b>Private network</b>.</li>
-              <li>Pick the hotspot in the <i>Auto-join hotspot</i> window, so Tonefer switches to it even when the laptop is on another Wi‑Fi.</li>
-              <li>To start with Windows: press <kbd>Win+R</kbd>, type <code>shell:startup</code>, and put a shortcut to <code>run.bat</code> there.</li>
+              <li>Join the phone's hotspot once. In Settings → Network &amp; internet → Wi‑Fi → <i>Manage known networks</i> → your hotspot, turn on <b>Connect automatically when in range</b>.</li>
+              <li>Pick the hotspot in the <i>Auto-join hotspot</i> window.</li>
             </ol>
           </section>
 

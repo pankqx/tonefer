@@ -37,11 +37,14 @@ Most phone-to-laptop tools go through someone else's server, need an account, or
 
 ## Install
 
-**Ubuntu:** download **[tonefer.deb](https://github.com/pankqx/tonefer/releases/latest/download/tonefer.deb)**, double-click to install, and open **Tonefer** from your apps. It runs in its own window and keeps receiving in the background.
+| Platform | Download |
+|---|---|
+| **Ubuntu** app | **[tonefer.deb](https://github.com/pankqx/tonefer/releases/latest/download/tonefer.deb)**: double-click to install, opens in its own window |
+| **Windows** app | **[ToneferSetup.exe](https://github.com/pankqx/tonefer/releases/latest/download/ToneferSetup.exe)**: tray icon, app window, starts at sign-in |
+| **Laptop browser** | While Tonefer runs: **http://127.0.0.1:8765/desk** in any browser |
+| **Android** | **[tonefer.apk](https://github.com/pankqx/tonefer-android/releases/latest/download/tonefer.apk)** (or just Chrome on the phone) |
 
-**Android:** install **[tonefer.apk](https://github.com/pankqx/tonefer-android/releases/latest/download/tonefer.apk)** and scan the pairing code.
-
-**From source / Windows:** see the **[user guide](GUIDE.md)**.
+Every release is built, installed and tested automatically on Ubuntu 24.04 and Windows. Full walkthrough: **[user guide](GUIDE.md)**.
 
 ## How it works
 
@@ -68,6 +71,8 @@ web/desk/              Laptop interface (Transfers · Instructions)
 web/phone/             Phone web interface
 web/static/            Shared CSS/JS, tweetnacl, IBM Plex Mono (all offline)
 desktop/tonefer_app.py Ubuntu app window (GTK + WebKit)
+desktop/tonefer_win.py Windows app (tray + app window)
+packaging/windows/     Windows icon + Inno Setup installer
 packaging/build-deb.sh Builds the .deb (CI builds, installs and tests it on every push)
 scripts/               One-click install / uninstall / launcher (Ubuntu)
 docs/PROTOCOL.md       Wire protocol (used by the Android app)
@@ -87,7 +92,7 @@ Configuration (environment variables): `TONEFER_PORT` (8765), `TONEFER_FILES` (`
 - [x] Instructions tab and phone help
 - [x] Native Android app with share target and customisation
 - [x] Ubuntu app (.deb) with its own window
-- [ ] Windows installer (single `.exe`)
+- [x] Windows app with installer
 - [ ] Chunked streaming for very large files
 - [ ] Clipboard sync (quick-settings tile)
 
