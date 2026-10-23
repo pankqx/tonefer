@@ -38,7 +38,7 @@
   .stack { display: flex; flex-direction: column; gap: 16px; min-height: 0; overflow-y: auto; padding-right: 4px; scrollbar-width: thin; }
 
   /* pairing */
-  .qr { background: var(--qr-tile); border-radius: 14px; padding: 14px; aspect-ratio: 1; display: grid; place-items: center; }
+  .qr { background: var(--qr-tile); border-radius: 0; padding: 14px; aspect-ratio: 1; display: grid; place-items: center; }
   .qr svg { width: 100%; height: 100%; display: block; }
   .qr svg path { fill: #262423; }
   .qr .none { color: #262423; font-size: 13.5px; text-align: center; padding: 16px; line-height: 1.55; }
@@ -50,11 +50,11 @@
   .addr { margin-top: 12px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
   .addr mark { font-size: 13.5px; font-weight: 500; }
   .addr .grow { flex: 1; }
-  .addr select { background: var(--panel); border: 1px solid var(--line-strong); border-radius: 8px; font-size: 12px; padding: 3px 6px; max-width: 110px; }
+  .addr select { background: var(--panel); border: 1px solid var(--line-strong); border-radius: 0; font-size: 12px; padding: 3px 6px; max-width: 110px; }
 
   .rows { list-style: none; margin: 14px 0 0; padding: 0; }
   .rows li { display: grid; grid-template-columns: 26px 1fr; gap: 8px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 14px; }
-  .rows .n { width: 18px; height: 18px; margin-top: 2px; border-radius: 50%; border: 1.5px solid var(--line-strong); display: grid; place-items: center; }
+  .rows .n { width: 18px; height: 18px; margin-top: 2px; border-radius: 0; border: 1.5px solid var(--line-strong); display: grid; place-items: center; }
   .rows .n.ok { background: var(--teal); border-color: var(--teal); }
   .rows .n.ok::after { content: ""; width: 7px; height: 4px; border: solid var(--teal-ink); border-width: 0 0 2px 2px; transform: rotate(-45deg) translate(1px, -1px); }
   .rows .n.warn { border-color: var(--coral); background: var(--coral); }
@@ -68,19 +68,19 @@
   .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
   .field label { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
   .field select, .field input {
-    background: var(--sunk); border: 1px solid transparent; border-radius: 12px; padding: 9px 12px; font-size: 14px; outline: 0;
+    background: var(--sunk); border: 1px solid transparent; border-radius: 0; padding: 9px 12px; font-size: 14px; outline: 0;
   }
   .field select:focus, .field input:focus { border-color: var(--teal); }
   .switch { display: flex; align-items: center; gap: 10px; font-size: 13.5px; cursor: pointer; margin: 4px 0 12px; }
-  .switch input { appearance: none; width: 38px; height: 22px; border-radius: 22px; background: var(--sunk); position: relative; cursor: pointer; transition: background .2s; flex: none; }
-  .switch input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--muted); transition: transform .2s, background .2s; }
+  .switch input { appearance: none; width: 38px; height: 22px; border-radius: 0; background: var(--sunk); position: relative; cursor: pointer; transition: background .2s; flex: none; }
+  .switch input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 0; background: var(--muted); transition: transform .2s, background .2s; }
   .switch input:checked { background: var(--teal); }
   .switch input:checked::after { transform: translateX(16px); background: var(--teal-ink); }
   .status-line { font-size: 12.5px; color: var(--muted); min-height: 1.5em; }
 
   .fw .content { font-size: 13.5px; }
   .fw b { display: block; margin-bottom: 4px; }
-  .fw .cmd { margin-top: 10px; display: flex; align-items: center; gap: 6px; background: var(--sunk); border-radius: 12px; padding: 7px 7px 7px 12px; font-size: 13px; }
+  .fw .cmd { margin-top: 10px; display: flex; align-items: center; gap: 6px; background: var(--sunk); border-radius: 0; padding: 7px 7px 7px 12px; font-size: 13px; }
   .fw .cmd code { flex: 1; word-break: break-all; }
   .fw .cmd code::before { content: "$ "; color: var(--teal); }
 
@@ -91,7 +91,7 @@
   .main { min-height: 0; position: relative; }
   .titlebar.tabs { gap: 6px; }
   .tab {
-    background: none; border: 1px solid transparent; border-radius: 99px;
+    background: none; border: 1px solid transparent; border-radius: 0;
     padding: 3px 14px; font-size: 12px; font-weight: 500; color: var(--muted);
     text-transform: uppercase; letter-spacing: .08em;
   }
@@ -106,7 +106,7 @@
   .doc-head h1 { font-size: 34px; margin: 6px 0 10px; }
   .doc-head p { color: var(--muted); margin: 0 0 18px; }
   .toc { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; }
-  .toc a { text-decoration: none; padding: 6px 12px; border: 1px solid var(--line); border-radius: 99px; font-size: 13.5px; }
+  .toc a { text-decoration: none; padding: 6px 12px; border: 1px solid var(--line); border-radius: 0; font-size: 13.5px; }
   .toc a:hover { border-color: var(--teal); color: var(--teal); }
   .doc section { padding: 26px 0 8px; border-bottom: 1px solid var(--line); scroll-margin-top: 12px; }
   .doc h2 { font-size: 19px; margin: 0 0 14px; display: flex; gap: 12px; align-items: baseline; }
@@ -117,16 +117,16 @@
   .doc ol.steps ul { padding-left: 18px; margin: 6px 0 0; }
   .doc ul.ticks { list-style: none; padding: 0; margin: 12px 0; }
   .doc ul.ticks li { padding-left: 24px; position: relative; margin-bottom: 6px; }
-  .doc ul.ticks li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 9px; height: 9px; border-radius: 50%; background: var(--teal); }
-  .doc pre { background: var(--sunk); color: var(--ink); padding: 12px 16px; margin: 12px 0; overflow-x: auto; border-radius: 12px; font-size: 14px; }
+  .doc ul.ticks li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 9px; height: 9px; border-radius: 0; background: var(--teal); }
+  .doc pre { background: var(--sunk); color: var(--ink); padding: 12px 16px; margin: 12px 0; overflow-x: auto; border-radius: 0; font-size: 14px; }
   .doc pre code::before { content: "$ "; color: var(--teal); }
-  .doc code { font: inherit; font-size: 13.5px; background: var(--sunk); padding: 2px 6px; border-radius: 6px; }
+  .doc code { font: inherit; font-size: 13.5px; background: var(--sunk); padding: 2px 6px; border-radius: 0; }
   .doc pre code { background: none; padding: 0; }
   .doc .note { color: var(--muted); font-size: 14px; border-left: 3px solid var(--coral); padding-left: 14px; }
   .doc table.keys { width: 100%; border-collapse: collapse; }
   .doc table.keys td { border-top: 1px solid var(--line); padding: 10px 12px 10px 0; vertical-align: top; }
   .doc table.keys td:first-child { font-weight: 600; width: 34%; }
-  .doc kbd, .hint kbd { font: inherit; font-size: 12px; border: 1px solid var(--line-strong); border-radius: 6px; padding: 0 6px; }
+  .doc kbd, .hint kbd { font: inherit; font-size: 12px; border: 1px solid var(--line-strong); border-radius: 0; padding: 0 6px; }
   .doc dl.faq dt { font-weight: 600; margin-top: 14px; }
   .doc dl.faq dd { margin: 3px 0 0; color: var(--muted); }
 
@@ -139,7 +139,7 @@
 
   .drop {
     position: absolute; inset: 52px 16px 16px; z-index: 30; pointer-events: none;
-    border: 2px dashed var(--teal); border-radius: 18px;
+    border: 2px dashed var(--teal); border-radius: 0;
     background: color-mix(in srgb, var(--panel) 92%, transparent);
     display: none; place-items: center; text-align: center;
   }
