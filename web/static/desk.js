@@ -1,6 +1,6 @@
 // Laptop view. Talks to the local server over loopback only.
 (function () {
-  const { ICONS, toast, renderTimeline, mascot, copyText } = window.T;
+  const { ICONS, toast, renderTimeline, mark, brand, copyText } = window.T;
   const $ = (id) => document.getElementById(id);
   let items = [];
   let phones = 0;
@@ -10,7 +10,7 @@
   let ws;
 
   // ---- static bits ----
-  $("brand").innerHTML = mascot() + "tonefer";
+  $("brand").innerHTML = brand();
   $("attach").innerHTML = ICONS.plus;
   $("sendBtn").innerHTML = ICONS.send;
   $("copyAddr").innerHTML = ICONS.copy;
@@ -19,16 +19,15 @@
   $("repair").innerHTML = ICONS.x + "Unpair all phones";
   $("clear").innerHTML = ICONS.trash + "Clear history";
   $("viewerSave").innerHTML = ICONS.down + " Save";
-  $("pairAnother").querySelector(".chip").innerHTML = ICONS.arrow;
-  $("connMascot").innerHTML = mascot("bob happy");
-  $("dropMascot").innerHTML = mascot("bob");
+  $("pairAnother").innerHTML = "Pair another phone " + ICONS.arrow;
+  $("connMark").innerHTML = mark("pulse", 54);
 
   // ---- rendering ----
   const opts = {
     self: "laptop",
     peerLabel: "phone",
-    emptyTitle: "Nothing here yet",
-    emptyText: "Send a note or drop a photo. It pops up on your phone right away.",
+    emptyTitle: "Nothing <em>here</em> yet.",
+    emptyText: "Send a note or drop a photo. It lands on your phone right away.",
     image: (item, img) => { img.src = `/desk/file/${item.id}`; },
     open: (item) => openViewer(item),
     download: (item) => {
@@ -47,7 +46,6 @@
     if (scroll || nearBottom) sc.scrollTop = sc.scrollHeight;
   }
 
-  function strip(html) { $("strip").innerHTML = html; }
 
   function setPresence(n) {
     const was = phones;
@@ -65,11 +63,8 @@
     $("connCard").hidden = wantPair || phones === 0;
     if (phones > 0) {
       $("connText").textContent = phones === 1
-        ? "Your phone is connected. Anything you send shows up there instantly."
+        ? "Anything you send shows up there instantly."
         : `${phones} phones are connected. Everything you send reaches all of them.`;
-      strip("Your phone is connected. Say hi! 👋");
-    } else {
-      strip("Pair your phone in one scan. Turn on its hotspot and join it from this laptop.");
     }
   }
 
@@ -93,7 +88,7 @@
       qr.innerHTML = d.svg;
       if (urlChanged) { qr.classList.remove("fresh"); void qr.offsetWidth; qr.classList.add("fresh"); toast("Network changed. QR code updated"); }
     } else {
-      qr.innerHTML = `<div class="none">${mascot("sad")}No network yet.<br>Turn on your phone's hotspot and connect this laptop to it. This updates by itself.</div>`;
+      qr.innerHTML = `<div class="none">${mark("apart", 44)}<b>No network yet.</b>Turn on your phone's hotspot and connect this laptop to it. This card updates by itself.</div>`;
     }
 
     $("addrRow").hidden = !d.address;
@@ -106,12 +101,12 @@
     const c2 = $("c2"), c2t = $("c2t");
     if (d.wifi) {
       c2.className = "n ok"; c2.textContent = "✓";
-      c2t.innerHTML = `Laptop is on “${T.esc(d.wifi)}”<small>Is that your phone's hotspot? If not, switch to it.</small>`;
+      c2t.innerHTML = `Laptop is on <mark>${T.esc(d.wifi)}</mark><small>Is that your phone's hotspot? If not, switch to it.</small>`;
     } else if (d.addrs.length) {
-      c2.className = "n"; c2.textContent = "2";
-      c2t.innerHTML = `Laptop joined it<small>Pick your phone in the laptop's Wi‑Fi list.</small>`;
+      c2.className = "n"; c2.textContent = "02";
+      c2t.innerHTML = `Join it from this laptop<small>Pick your phone in the laptop's Wi‑Fi list.</small>`;
     } else {
-      c2.className = "n warn"; c2.textContent = "!";
+      c2.className = "n warn"; c2.textContent = "02";
       c2t.innerHTML = `Laptop isn't on any network<small>Pick your phone in the laptop's Wi‑Fi list.</small>`;
     }
 
@@ -156,7 +151,6 @@
     ws.onclose = () => {
       setPresence(0);
       $("status").textContent = "tonefer stopped";
-      strip("tonefer isn't running. Start it again with run.sh / run.bat.");
       setTimeout(connect, 1500);
     };
   }
@@ -233,7 +227,7 @@
   // ---- side actions ----
   $("folder").onclick = async () => {
     const d = await (await fetch("/desk/api/open-folder", { method: "POST" })).json();
-    toast("Files live in " + d.path);
+    toast("Files are in " + d.path);
   };
   $("repair").onclick = async () => {
     if (!confirm("Unpair every phone? They'll need to scan a new code.")) return;

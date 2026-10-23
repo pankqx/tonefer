@@ -1,6 +1,6 @@
 // Phone view. Every payload is sealed with the pairing key (XSalsa20-Poly1305).
 (function () {
-  const { ICONS, toast, renderTimeline, mascot } = window.T;
+  const { ICONS, toast, renderTimeline, mark, brand } = window.T;
   const $ = (id) => document.getElementById(id);
   const STORE = "tonefer.key";
 
@@ -61,15 +61,15 @@
   function showWelcome(title, text) {
     $("app").hidden = true;
     $("welcome").hidden = false;
-    $("wMascot").innerHTML = mascot(title ? "bob sad" : "bob");
-    if (title) $("wTitle").textContent = title;
+    $("wMark").innerHTML = mark(title ? "apart" : "pulse", 50);
+    if (title) $("wTitle").innerHTML = title;
     if (text) $("wText").textContent = text;
   }
 
   function unpair(reason) {
     try { localStorage.removeItem(STORE); } catch (_) {}
     key = null;
-    showWelcome("This phone was unpaired.", reason || "Scan the new code on your laptop to pair again.");
+    showWelcome("Unpaired. <em>Scan</em> again.", reason || "Scan the new code on your laptop to pair again.");
   }
 
   // ---------------- state + rendering ----------------
@@ -92,15 +92,10 @@
   const opts = {
     self: "phone",
     peerLabel: "laptop",
-    emptyTitle: "You're connected!",
-    emptyText: "Send a note or a photo. It pops up on your laptop right away.",
-    image: (item, img) => {
-      const io = new IntersectionObserver(async (entries) => {
-        if (!entries[0].isIntersecting) return;
-        io.disconnect();
-        try { img.src = await fetchFile(item); } catch (_) { img.alt = "Could not load"; }
-      }, { rootMargin: "400px" });
-      io.observe(img);
+    emptyTitle: "You're <em>in.</em>",
+    emptyText: "Send a note or a photo. It lands on your laptop right away.",
+    image: async (item, img) => {
+      try { img.src = await fetchFile(item); } catch (_) { img.alt = "Couldn't load"; }
     },
     open: async (item) => {
       viewing = item;
@@ -249,8 +244,8 @@
 
   // ---------------- boot ----------------
   $("attach").innerHTML = ICONS.plus;
-  $("brand").innerHTML = mascot() + "tonefer";
-  $("wBrand").innerHTML = mascot() + "tonefer";
+  $("brand").innerHTML = brand();
+  $("wBrand").innerHTML = brand();
   $("sendBtn").innerHTML = ICONS.send;
 
   const k = loadKey();

@@ -13,20 +13,12 @@
     qr: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/></svg>',
   };
 
-  // Tono, the little tonefer mascot.
-  function mascot(cls = "") {
-    return `<svg class="tono ${cls}" viewBox="0 0 100 100" aria-hidden="true">
-      <path d="M38 13c-4-6-9-7-12-5M62 13c4-6 9-7 12-5" fill="none" stroke="#0f0a05" stroke-width="3.5" stroke-linecap="round"/>
-      <rect x="11" y="16" width="78" height="74" rx="32" fill="#ffcc00" stroke="#0f0a05" stroke-width="4"/>
-      <ellipse class="eye" cx="38" cy="49" rx="4.6" ry="6.4" fill="#0f0a05"/>
-      <ellipse class="eye" cx="62" cy="49" rx="4.6" ry="6.4" fill="#0f0a05"/>
-      <circle cx="40" cy="46.5" r="1.6" fill="#fff"/><circle cx="64" cy="46.5" r="1.6" fill="#fff"/>
-      <circle cx="26" cy="62" r="6.5" fill="#e0221b" opacity=".32"/>
-      <circle cx="74" cy="62" r="6.5" fill="#e0221b" opacity=".32"/>
-      <path class="mouth-happy" d="M43 61q7 7 14 0" fill="none" stroke="#0f0a05" stroke-width="3.6" stroke-linecap="round"/>
-      <path class="mouth-sad" d="M43 66q7-6 14 0" fill="none" stroke="#0f0a05" stroke-width="3.6" stroke-linecap="round"/>
-    </svg>`;
+  // Two circles — phone and laptop. "apart" when not connected.
+  function mark(cls = "", size = 30) {
+    return `<svg class="mark ${cls}" width="${size * 1.6}" height="${size}" viewBox="0 0 48 30" aria-hidden="true">
+      <circle class="a" cx="17" cy="15" r="13"/><circle class="b" cx="31" cy="15" r="13"/></svg>`;
   }
+  const brand = () => `<span class="brand">tone<i>/</i><em>fer</em></span>`;
 
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -93,7 +85,7 @@
   function renderTimeline(root, items, opts) {
     root.innerHTML = "";
     if (!items.length) {
-      root.innerHTML = `<div class="empty">${mascot("bob")}<h3 class="display">${opts.emptyTitle}</h3><p>${opts.emptyText}</p></div>`;
+      root.innerHTML = `<div class="empty"><h3 class="big">${opts.emptyTitle}</h3><div class="dash"></div><p>${opts.emptyText}</p></div>`;
       return;
     }
     let lastDay = "";
@@ -101,7 +93,7 @@
       const day = dayLabel(item.ts);
       if (day !== lastDay) {
         const d = document.createElement("div");
-        d.className = "day label"; d.textContent = day;
+        d.className = "day"; d.textContent = day;
         root.appendChild(d);
         lastDay = day;
       }
@@ -134,7 +126,7 @@
     if (opts.remove) actions.push(`<button class="icon-btn" data-act="remove" title="Delete">${ICONS.trash}</button>`);
 
     const extra = isImage ? ` · ${size(item.size)}` : "";
-    el.innerHTML = body + `<div class="meta"><span class="label">${esc(who)} · ${time(item.ts)}${extra}</span>${actions.join("")}</div>`;
+    el.innerHTML = body + `<div class="meta"><span class="when"><em>${esc(who)}</em> · ${time(item.ts)}${extra}</span>${actions.join("")}</div>`;
 
     const img = el.querySelector("img.thumb");
     if (img) {
@@ -155,5 +147,5 @@
     return el;
   }
 
-  window.T = { mascot, ICONS, esc, size, time, copyText, toast, renderTimeline };
+  window.T = { mark, brand, ICONS, esc, size, time, copyText, toast, renderTimeline };
 })();

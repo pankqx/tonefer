@@ -5,149 +5,116 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>tonefer</title>
 <link rel="icon" href="/static/icon.svg">
-<link rel="preload" href="/static/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/static/fonts/inter-tight.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/static/tonefer.css">
 <style>
   body { overflow: hidden; }
   .page { height: 100vh; display: flex; flex-direction: column; }
 
-  .strip {
-    background: var(--yellow); color: #0f0a05;
-    text-align: center; font-size: 13px; font-weight: 550;
-    padding: 7px 16px;
-    flex: none;
-  }
-  .strip button { border: 0; background: none; padding: 0; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
-
   .top {
-    display: flex; align-items: center; gap: 14px;
+    display: flex; align-items: center; gap: 16px;
     padding: 14px 28px;
-    border-bottom: 1px solid var(--line);
+    background: var(--panel); color: var(--panel-ink);
     flex: none;
   }
+  .top .brand { font-size: 24px; }
   .top .grow { flex: 1; }
-  .top .host { color: var(--muted); }
+  .top .host { font-size: 13px; color: var(--panel-muted); }
+  .top .host em { font-family: var(--serif); font-size: 15px; }
 
-  .body { flex: 1; display: grid; grid-template-columns: 360px 1fr; min-height: 0; }
+  .body { flex: 1; display: grid; grid-template-columns: 380px 1fr; min-height: 0; }
   aside {
-    padding: 22px 0 22px 28px;
+    border-right: 1px solid var(--line);
+    padding: 24px 24px 18px 28px;
     overflow-y: auto;
     display: flex; flex-direction: column; gap: 14px;
   }
 
-  /* dark pairing card, amdoc-style */
-  .night {
-    background: var(--night); color: var(--night-ink);
-    border-radius: 26px;
-    padding: 22px;
+  .panel {
+    background: var(--panel); color: var(--panel-ink);
+    border-radius: 18px;
+    padding: 24px 22px 18px;
   }
-  .night .label { color: rgba(250, 245, 240, .55); }
-  .night h2 { font-size: 32px; margin: 10px 0 16px; font-weight: 600; }
-  .night h2 em { font-style: normal; color: var(--yellow); }
+  .panel h2 { font-size: 40px; margin: 0 0 18px; }
+  .panel h2 em { color: var(--orange); font-size: 1.08em; }
   .qr {
-    background: #fff; border-radius: 20px; padding: 12px;
+    background: var(--butter); border-radius: 14px; padding: 14px;
     aspect-ratio: 1; display: grid; place-items: center;
-    position: relative;
   }
   .qr svg { width: 100%; height: 100%; display: block; }
-  .qr .none { color: #7a716a; font-size: 14px; text-align: center; padding: 24px; line-height: 1.45; }
-  .qr .none .tono { width: 64px; height: 64px; margin: 0 auto 12px; }
-  .qr.fresh { animation: flash .6s ease-out; }
-  @keyframes flash { from { box-shadow: 0 0 0 6px var(--yellow); } }
+  .qr svg path { fill: #191f06; }
+  .qr .none { color: #191f06; font-size: 14px; text-align: center; padding: 18px; line-height: 1.45; }
+  .qr .none .mark { margin: 0 auto 16px; }
+  .qr .none b { display: block; font-size: 22px; letter-spacing: -0.03em; margin-bottom: 6px; }
+  .qr.fresh { animation: flash .7s ease-out; }
+  @keyframes flash { from { box-shadow: 0 0 0 6px var(--orange); } }
 
   .addr {
     margin-top: 12px;
     display: flex; align-items: center; gap: 8px;
-    background: rgba(250, 245, 240, .08);
-    border-radius: 14px;
-    padding: 8px 8px 8px 12px;
-    font-size: 13px;
+    font-size: 13.5px; color: var(--panel-muted);
   }
-  .addr span { color: rgba(250, 245, 240, .6); }
-  .addr code { font: 600 14px var(--mono); color: var(--yellow); flex: 1; }
-  .addr .icon-btn { color: var(--night-ink); }
-  .addr select {
-    background: transparent; border: 0; color: rgba(250, 245, 240, .6); font-size: 12px; max-width: 110px;
-  }
+  .addr mark { font: 500 14px var(--mono); background: var(--butter); color: #191f06; padding: 2px 6px; }
+  .addr .grow { flex: 1; }
+  .addr select { background: transparent; border: 1px solid var(--panel-line); border-radius: 99px; color: var(--panel-ink); font-size: 12px; padding: 3px 6px; max-width: 110px; }
 
-  .checks { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
-  .checks li { display: flex; gap: 11px; align-items: flex-start; }
-  .checks .n {
-    width: 22px; height: 22px; border-radius: 50%; flex: none;
-    background: var(--yellow); color: #0f0a05;
-    display: grid; place-items: center;
-    font: 700 11px var(--sans);
-  }
-  .checks .n.ok { background: var(--ok); color: #fff; }
-  .checks .n.warn { background: var(--red); color: #fff; }
-  .checks small { display: block; color: rgba(250, 245, 240, .55); font-size: 12.5px; margin-top: 1px; }
-
-  .warn-box {
-    background: var(--blush); color: var(--ink);
-    border-radius: 20px; padding: 16px 18px;
+  .rows { list-style: none; margin: 16px 0 0; padding: 0; }
+  .rows li {
+    display: grid; grid-template-columns: 30px 1fr; gap: 6px;
+    padding: 11px 0;
+    border-top: 1px solid var(--panel-line);
     font-size: 14px;
   }
-  .warn-box b { color: var(--red); display: block; margin-bottom: 4px; }
-  .warn-box .cmd {
+  .rows .n { font-size: 12px; color: var(--panel-muted); padding-top: 2px; }
+  .rows .n.ok { color: #7bd34a; }
+  .rows .n.warn { color: var(--orange); }
+  .rows small { display: block; color: var(--panel-muted); font-size: 12.5px; margin-top: 2px; }
+  .rows mark { background: var(--butter); color: #191f06; }
+
+  .connected { text-align: left; }
+  .connected .mark { margin: 6px 0 22px; }
+  .connected p { color: var(--panel-muted); margin: -6px 0 20px; font-size: 14px; }
+
+  .fw {
+    border: 1px solid var(--line); border-radius: 18px;
+    padding: 16px 18px; font-size: 14px;
+    background: var(--butter); color: #191f06;
+  }
+  .fw .head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; font-size: 17px; letter-spacing: -0.03em; }
+  .fw .head em { font-family: var(--serif); font-size: 1.1em; color: var(--orange); }
+  .fw .cmd {
     margin-top: 10px;
     display: flex; align-items: center; gap: 6px;
-    background: var(--surface); border-radius: 12px; padding: 6px 6px 6px 12px;
-    font: 600 13px var(--mono);
+    background: #191f06; color: var(--butter);
+    border-radius: 10px; padding: 6px 6px 6px 12px;
+    font: 500 13px var(--mono);
   }
-  .warn-box .cmd code { flex: 1; word-break: break-all; }
+  .fw .cmd code { flex: 1; word-break: break-all; }
 
-  .connected { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 30px 22px 24px; }
-  .connected .tono { width: 96px; height: 96px; margin-bottom: 16px; }
-  .connected h2 { margin: 0 0 6px; }
-  .connected p { margin: 0 0 18px; color: rgba(250, 245, 240, .6); font-size: 14px; }
-
-  .side-actions { display: flex; flex-direction: column; gap: 2px; margin-top: auto; padding-top: 10px; }
-  .side-actions .btn { justify-content: flex-start; }
-  .danger:hover { color: var(--red) !important; }
+  .side-actions { display: flex; flex-direction: column; gap: 0; margin-top: auto; padding-top: 10px; }
+  .danger:hover { color: var(--orange) !important; }
 
   main { display: flex; flex-direction: column; min-width: 0; position: relative; }
-  .scroll { flex: 1; overflow-y: auto; padding: 10px 32px 16px; }
+  .scroll { flex: 1; overflow-y: auto; padding: 4px 36px 16px; }
   .timeline { max-width: 760px; margin: 0 auto; }
-  .uploads { max-width: 760px; width: calc(100% - 64px); margin: 0 auto; }
-  .composer {
-    max-width: 760px; width: calc(100% - 64px); margin: 0 auto 10px;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 26px;
-    padding: 8px;
-    display: flex; align-items: flex-end; gap: 6px;
-    box-shadow: var(--shadow);
-    transition: border-color .15s;
-  }
-  .composer:focus-within { border-color: color-mix(in srgb, var(--ink) 35%, transparent); }
-  .composer textarea {
-    flex: 1; border: 0; outline: 0; resize: none; background: transparent;
-    padding: 9px 4px; max-height: 200px; line-height: 1.45; font-size: 15px;
-  }
-  .round {
-    width: 40px; height: 40px; border-radius: 50%; border: 0; flex: none;
-    display: grid; place-items: center;
-    background: var(--soft); color: var(--ink);
-    transition: transform .12s, opacity .15s;
-  }
-  .round:active { transform: scale(.92); }
-  .round svg { width: 19px; height: 19px; }
-  .round.send { background: var(--red); color: #fff; }
-  .round:disabled { opacity: .3; }
-  .hint { text-align: center; color: var(--muted); margin: 0 0 14px; font-size: 10px; }
+  .uploads { max-width: 760px; width: calc(100% - 72px); margin: 0 auto; }
+  .composer { max-width: 760px; width: calc(100% - 72px); margin: 0 auto 8px; }
+  .composer textarea { max-height: 200px; font-size: 15px; }
+  .hint { text-align: center; color: var(--muted); margin: 0 0 14px; font-size: 12px; }
+  .hint em { font-family: var(--serif); font-size: 14px; }
 
   .drop {
-    position: absolute; inset: 14px 24px; border-radius: 30px;
-    border: 3px dashed var(--red);
-    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    position: absolute; inset: 16px 28px; border-radius: 24px;
+    border: 1.5px dashed var(--orange);
+    background: color-mix(in srgb, var(--bg) 90%, transparent);
     display: none; place-items: center; text-align: center;
     z-index: 30; pointer-events: none;
   }
-  .drop .tono { width: 90px; height: 90px; margin: 0 auto 14px; }
-  .drop .display { font-size: 34px; }
+  .drop .big { font-size: 56px; }
+  .drop .big em { color: var(--orange); }
   .drop.on { display: grid; }
 
-  @media (max-width: 860px) {
+  @media (max-width: 880px) {
     .body { grid-template-columns: 1fr; }
     aside { display: none; }
     .top { padding: 12px 18px; }
@@ -156,42 +123,39 @@
 </head>
 <body>
 <div class="page">
-  <div class="strip" id="strip"></div>
-
   <header class="top">
-    <span class="brand" id="brand"></span>
+    <span id="brand"></span>
     <span class="grow"></span>
-    <span class="label host" id="host"></span>
+    <span class="host" id="host"></span>
     <span class="pill" id="status">no phone yet</span>
   </header>
 
   <div class="body">
     <aside>
-      <section class="night" id="pairCard">
-        <div class="label">One-time pairing</div>
-        <h2 class="display"><em>Scan me</em> with your phone camera.</h2>
+      <section class="panel" id="pairCard">
+        <h2 class="big">Pair <em>your</em> phone.</h2>
         <div class="qr" id="qr"></div>
         <div class="addr" id="addrRow" hidden>
-          <span>or open</span><code id="addr"></code>
+          <span>or type</span><mark id="addr"></mark><span class="grow"></span>
           <select id="ipsel" title="Other network addresses" hidden></select>
           <button class="icon-btn" id="copyAddr" title="Copy address"></button>
         </div>
-        <ol class="checks">
-          <li><span class="n" id="c1">1</span><div>Phone hotspot on<small>Settings → Hotspot. No Wi‑Fi needed.</small></div></li>
-          <li><span class="n" id="c2">2</span><div id="c2t">Laptop joined it<small>Pick your phone in the laptop's Wi‑Fi list.</small></div></li>
-          <li><span class="n" id="c3">3</span><div>Scan, then “Add to Home screen”<small>In Chrome's ⋮ menu, so it opens like an app.</small></div></li>
+        <ol class="rows">
+          <li><span class="n" id="c1">01</span><div>Turn on your phone's hotspot<small>Settings → Hotspot. No Wi‑Fi router needed.</small></div></li>
+          <li><span class="n" id="c2">02</span><div id="c2t">Join it from this laptop<small>Pick your phone in the laptop's Wi‑Fi list.</small></div></li>
+          <li><span class="n" id="c3">03</span><div>Scan with the phone camera<small>Then Chrome ⋮ → <mark>Add to Home screen</mark>.</small></div></li>
         </ol>
       </section>
 
-      <section class="night connected" id="connCard" hidden>
-        <div id="connMascot"></div>
-        <h2 class="display">Best friends now.</h2>
-        <p id="connText">Your phone is connected. Anything you send shows up there instantly.</p>
-        <button class="btn red" id="pairAnother">Pair another phone <span class="chip"></span></button>
+      <section class="panel connected" id="connCard" hidden>
+        <div id="connMark"></div>
+        <h2 class="big">Connected <em>to</em> phone.</h2>
+        <p id="connText">Anything you send shows up there instantly.</p>
+        <button class="btn orange" id="pairAnother">Pair another phone</button>
       </section>
 
-      <section class="warn-box" id="fw" hidden>
-        <b>Phone can't reach the laptop?</b>
+      <section class="fw" id="fw" hidden>
+        <div class="head"><span>Phone <em>can't</em> reach it?</span></div>
         <span id="fwText"></span>
         <div class="cmd"><code id="fwFix"></code><button class="icon-btn" id="copyFix" title="Copy"></button></div>
       </section>
@@ -212,8 +176,8 @@
         <textarea id="text" rows="1" placeholder="Write something for your phone…"></textarea>
         <button class="round send" id="sendBtn" disabled title="Send"></button>
       </form>
-      <div class="hint label">enter to send · drop files anywhere · ctrl+v pastes images</div>
-      <div class="drop" id="drop"><div><div id="dropMascot"></div><div class="display">Let go — off to your phone!</div></div></div>
+      <div class="hint">Enter to send — <em>drop</em> files anywhere — Ctrl+V pastes images</div>
+      <div class="drop" id="drop"><div class="big">Let <em>go.</em></div></div>
     </main>
   </div>
 </div>
@@ -222,7 +186,7 @@
   <div>
     <img id="viewerImg" alt="">
     <div class="bar">
-      <button class="btn red" id="viewerSave"></button>
+      <button class="btn orange" id="viewerSave"></button>
       <button class="btn" id="viewerClose">Close</button>
     </div>
   </div>
