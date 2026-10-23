@@ -36,7 +36,14 @@ import qrcode
 import qrcode.image.svg
 from aiohttp import WSMsgType, web
 
-VERSION = "0.1.0"
+def _read_version() -> str:
+    try:
+        return (Path(__file__).resolve().parent / "VERSION").read_text().strip()
+    except OSError:
+        return "dev"
+
+
+VERSION = _read_version()
 APP_DIR = Path(os.environ.get("TONEFER_HOME", Path.home() / ".tonefer"))
 FILES_DIR = Path(os.environ.get("TONEFER_FILES", Path.home() / "Tonefer"))
 PORT = int(os.environ.get("TONEFER_PORT", "8765"))

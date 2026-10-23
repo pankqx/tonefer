@@ -1,0 +1,78 @@
+name: Ubuntu app
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deb:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build .deb
+        run: |
+          ./packaging/build-deb.sh
+          echo "VERSION=$(cat VERSION | tr -d '[:space:]')" >> "$GITHUB_ENV"
+
+      - name: Install it like a user would
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ./dist/tonefer_*_all.deb xvfb imagemagick dbus-x11 >/dev/null
+          dpkg -s tonefer | grep -E "Status|Version"
+          test -x /usr/bin/tonefer
+          systemctl --global is-enabled tonefer.service
+
+      - name: Server starts and serves the laptop view
+        run: |
+          python3 /opt/tonefer/server.py --no-browser > server.log 2>&1 &
+          for i in $(seq 1 30); do curl -fs -o /dev/null http://127.0.0.1:8765/desk && break; sleep 0.5; done
+          curl -fs http://127.0.0.1:8765/desk | grep -q "Transfers"
+          curl -s -o /dev/null -w "phone api without token: %{http_code}\n" http://127.0.0.1:8765/api/ping
+
+      - name: App window opens (screenshot)
+        env:
+          WEBKIT_DISABLE_COMPOSITING_MODE: "1"
+        run: |
+          mkdir -p shots
+          xvfb-run -a -s "-screen 0 1440x900x24" bash -c '
+            dbus-launch --exit-with-session tonefer > app.log 2>&1 &
+            sleep 4;  import -window root shots/ubuntu-app-loading.png
+            sleep 6;  import -window root shots/ubuntu-app.png
+            pkill -f tonefer_app.py || true'
+          cat app.log || true
+          ls -la shots
+
+      - name: Publish CI output
+        if: always()
+        run: |
+          mkdir -p ci-out && cp -r shots ci-out/ 2>/dev/null || true
+          cp dist/*.deb ci-out/ 2>/dev/null || true
+          cp server.log app.log ci-out/ 2>/dev/null || true
+          cd ci-out
+          echo "run ${{ github.run_number }} · ${{ github.sha }} · ${{ job.status }}" > STATUS.txt
+          git init -q && git checkout -q -b ci-output && git add -A
+          git -c user.name=pankqx -c user.email=pankqx@gmail.com commit -qm "Ubuntu app CI output ${{ github.run_number }}"
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" ci-output
+
+      - name: Stable file name
+        run: cp dist/tonefer_${VERSION}_all.deb dist/tonefer.deb
+
+      # Stable link: https://github.com/pankqx/tonefer/releases/latest/download/tonefer.deb
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: Tonefer ${{ env.VERSION }} for Ubuntu
+          target_commitish: ${{ github.sha }}
+          make_latest: "true"
+          body: |
+            **Install:** download `tonefer.deb`, double-click it (or `sudo apt install ./tonefer.deb`), then open **Tonefer** from your apps.
+            Android app: https://github.com/pankqx/tonefer-android/releases/latest/download/tonefer.apk
+          files: |
+            dist/tonefer.deb
+            dist/tonefer_${{ env.VERSION }}_all.deb
