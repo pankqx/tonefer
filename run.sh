@@ -4,6 +4,11 @@ set -e
 cd "$(dirname "$0")"
 PORT="${TONEFER_PORT:-8765}"
 
+# Installed with scripts/install-ubuntu.sh? Then it's already running — just open the window.
+if [ "${1:-}" != "doctor" ] && [ "$(systemctl --user is-active tonefer.service 2>/dev/null)" = "active" ]; then
+  exec ./scripts/open.sh
+fi
+
 if [ ! -x .venv/bin/python ]; then
   echo "Setting up tonefer (first run)…"
   if ! python3 -m venv .venv 2>/dev/null; then
@@ -27,5 +32,5 @@ if command -v ufw >/dev/null 2>&1 && [ "$(systemctl is-active ufw 2>/dev/null)" 
   fi
 fi
 
-if [ "$1" = "doctor" ]; then exec .venv/bin/python server.py --doctor; fi
+if [ "${1:-}" = "doctor" ]; then exec .venv/bin/python server.py --doctor; fi
 exec .venv/bin/python server.py "$@"
