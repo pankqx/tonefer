@@ -5,12 +5,28 @@
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
     down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5M5 19.5h14"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7h15M10 11v6m4-6v6M6.5 7l1 12a2 2 0 0 0 2 2h5a2 2 0 0 0 2-2l1-12M9.5 7V4.5h5V7"/></svg>',
+    arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m0 0-5.5-5.5M19 12l-5.5 5.5"/></svg>',
     send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5m0 0-6 6m6-6 6 6"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
     x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>',
     folder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>',
     qr: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/></svg>',
   };
+
+  // Tono, the little tonefer mascot.
+  function mascot(cls = "") {
+    return `<svg class="tono ${cls}" viewBox="0 0 100 100" aria-hidden="true">
+      <path d="M38 13c-4-6-9-7-12-5M62 13c4-6 9-7 12-5" fill="none" stroke="#0f0a05" stroke-width="3.5" stroke-linecap="round"/>
+      <rect x="11" y="16" width="78" height="74" rx="32" fill="#ffcc00" stroke="#0f0a05" stroke-width="4"/>
+      <ellipse class="eye" cx="38" cy="49" rx="4.6" ry="6.4" fill="#0f0a05"/>
+      <ellipse class="eye" cx="62" cy="49" rx="4.6" ry="6.4" fill="#0f0a05"/>
+      <circle cx="40" cy="46.5" r="1.6" fill="#fff"/><circle cx="64" cy="46.5" r="1.6" fill="#fff"/>
+      <circle cx="26" cy="62" r="6.5" fill="#e0221b" opacity=".32"/>
+      <circle cx="74" cy="62" r="6.5" fill="#e0221b" opacity=".32"/>
+      <path class="mouth-happy" d="M43 61q7 7 14 0" fill="none" stroke="#0f0a05" stroke-width="3.6" stroke-linecap="round"/>
+      <path class="mouth-sad" d="M43 66q7-6 14 0" fill="none" stroke="#0f0a05" stroke-width="3.6" stroke-linecap="round"/>
+    </svg>`;
+  }
 
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -77,7 +93,7 @@
   function renderTimeline(root, items, opts) {
     root.innerHTML = "";
     if (!items.length) {
-      root.innerHTML = `<div class="empty"><b>${opts.emptyTitle}</b>${opts.emptyText}</div>`;
+      root.innerHTML = `<div class="empty">${mascot("bob")}<h3 class="display">${opts.emptyTitle}</h3><p>${opts.emptyText}</p></div>`;
       return;
     }
     let lastDay = "";
@@ -85,8 +101,7 @@
       const day = dayLabel(item.ts);
       if (day !== lastDay) {
         const d = document.createElement("div");
-        d.className = "day"; d.textContent = day;
-        d.style.alignSelf = "center";
+        d.className = "day label"; d.textContent = day;
         root.appendChild(d);
         lastDay = day;
       }
@@ -110,7 +125,7 @@
       body = `<img class="thumb" alt="${esc(item.name)}" loading="lazy">`;
     } else {
       const ext = (item.name.split(".").pop() || "file").slice(0, 4);
-      body = `<div class="file-row"><div class="badge">${esc(ext)}</div><div><div class="name">${esc(item.name)}</div><div class="size">${size(item.size)}</div></div></div>`;
+      body = `<div class="file-row"><div class="badge">${esc(ext)}</div><div style="min-width:0"><div class="name">${esc(item.name)}</div><div class="size">${size(item.size)}</div></div></div>`;
     }
 
     const actions = [];
@@ -119,7 +134,7 @@
     if (opts.remove) actions.push(`<button class="icon-btn" data-act="remove" title="Delete">${ICONS.trash}</button>`);
 
     const extra = isImage ? ` · ${size(item.size)}` : "";
-    el.innerHTML = body + `<div class="meta"><span>${esc(who)} · ${time(item.ts)}${extra}</span><span class="grow"></span>${actions.join("")}</div>`;
+    el.innerHTML = body + `<div class="meta"><span class="label">${esc(who)} · ${time(item.ts)}${extra}</span>${actions.join("")}</div>`;
 
     const img = el.querySelector("img.thumb");
     if (img) {
@@ -140,5 +155,5 @@
     return el;
   }
 
-  window.T = { ICONS, esc, size, time, copyText, toast, renderTimeline };
+  window.T = { mascot, ICONS, esc, size, time, copyText, toast, renderTimeline };
 })();

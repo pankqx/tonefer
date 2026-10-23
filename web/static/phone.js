@@ -1,6 +1,6 @@
 // Phone view. Every payload is sealed with the pairing key (XSalsa20-Poly1305).
 (function () {
-  const { ICONS, toast, renderTimeline } = window.T;
+  const { ICONS, toast, renderTimeline, mascot } = window.T;
   const $ = (id) => document.getElementById(id);
   const STORE = "tonefer.key";
 
@@ -61,6 +61,7 @@
   function showWelcome(title, text) {
     $("app").hidden = true;
     $("welcome").hidden = false;
+    $("wMascot").innerHTML = mascot(title ? "bob sad" : "bob");
     if (title) $("wTitle").textContent = title;
     if (text) $("wText").textContent = text;
   }
@@ -91,8 +92,8 @@
   const opts = {
     self: "phone",
     peerLabel: "laptop",
-    emptyTitle: "Connected",
-    emptyText: "Send a message or a photo — it shows up on your laptop instantly.",
+    emptyTitle: "You're connected!",
+    emptyText: "Send a note or a photo. It pops up on your laptop right away.",
     image: (item, img) => {
       const io = new IntersectionObserver(async (entries) => {
         if (!entries[0].isIntersecting) return;
@@ -107,7 +108,7 @@
       $("viewer").classList.add("open");
     },
     download: async (item) => {
-      toast("Decrypting…");
+      toast("Unlocking…");
       try {
         const url = await fetchFile(item);
         const a = document.createElement("a");
@@ -125,10 +126,14 @@
     if (force || near) sc.scrollTop = sc.scrollHeight;
   }
 
+  let offlineTimer;
   function status(text, on) {
     const s = $("status");
     s.textContent = text;
     s.classList.toggle("on", !!on);
+    clearTimeout(offlineTimer);
+    if (on) $("offline").hidden = true;
+    else offlineTimer = setTimeout(() => { $("offline").hidden = false; }, 4000);
   }
 
   // ---------------- live connection ----------------
@@ -244,6 +249,8 @@
 
   // ---------------- boot ----------------
   $("attach").innerHTML = ICONS.plus;
+  $("brand").innerHTML = mascot() + "tonefer";
+  $("wBrand").innerHTML = mascot() + "tonefer";
   $("sendBtn").innerHTML = ICONS.send;
 
   const k = loadKey();

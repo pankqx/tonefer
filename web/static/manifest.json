@@ -3,7 +3,7 @@
   "short_name": "tonefer",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0e0e0d",
-  "theme_color": "#0e0e0d",
+  "background_color": "#faf5f0",
+  "theme_color": "#faf5f0",
   "icons": [{ "src": "/static/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
 }
