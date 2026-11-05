@@ -19,7 +19,7 @@ jobs:
       - name: Install it like a user would
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq ./dist/tonefer_*_all.deb xvfb imagemagick dbus-x11 >/dev/null
+          sudo apt-get install -y -qq ./dist/tonefer_*_all.deb xvfb imagemagick dbus-x11 x11-utils >/dev/null
           dpkg -s tonefer | grep -E "Status|Version"
           systemctl --global is-enabled tonefer.service
       - name: Server serves the laptop view
@@ -35,7 +35,11 @@ jobs:
           timeout 90 xvfb-run -a -s "-screen 0 1440x900x24" bash -c '
             tonefer > app.log 2>&1 &
             APP=$!
-            sleep 10; import -window root shots/ubuntu-app.png
+            # Wait for the window to map, then past the 5-second start-up animation.
+            for i in $(seq 1 60); do xwininfo -root -tree | grep -qi "tonefer" && break; sleep 0.5; done
+            sleep 3; import -window root shots/ubuntu-app-loading.png
+            sleep 5; import -window root shots/ubuntu-app.png
+            xwininfo -root -tree > shots/windows.txt
             kill $APP 2>/dev/null; wait $APP 2>/dev/null; true'
       - uses: actions/upload-artifact@v4
         with:
