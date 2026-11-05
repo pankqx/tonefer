@@ -47,13 +47,14 @@ jobs:
             dpkg -l | grep -E "webkit2gtk|apparmor " | awk '{print $2, $3}'
             ls /etc/apparmor.d | grep -iE "bwrap|webkit|userns" || true
           } > shots/diag.txt 2>&1
-          # Same launch with WebKit's sandbox off, to tell sandbox problems apart from others.
+          ls -la /dev/dri >> shots/diag.txt 2>&1 || true
+          # Where is the app after 10 s? (Python stacks + GLib debug messages)
           timeout 60 xvfb-run -a -s "-screen 0 1440x900x24" bash -c '
-            WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1 tonefer > app-nosandbox.log 2>&1 &
+            G_MESSAGES_DEBUG=all python3 -c "import faulthandler,sys,runpy; faulthandler.dump_traceback_later(10, exit=False); sys.argv=[\"tonefer_app.py\"]; runpy.run_path(\"/opt/tonefer/desktop/tonefer_app.py\", run_name=\"__main__\")" > app-trace.log 2>&1 &
             APP=$!
-            sleep 12; import -window root shots/ubuntu-app-nosandbox.png
+            sleep 13; import -window root shots/ubuntu-app-trace.png
             kill $APP 2>/dev/null; wait $APP 2>/dev/null; true'
-          cp app-nosandbox.log shots/ 2>/dev/null || true
+          tail -c 60000 app-trace.log > shots/app-trace.log 2>/dev/null || true
       - uses: actions/upload-artifact@v4
         with:
           name: deb
