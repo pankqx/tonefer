@@ -1,0 +1,8 @@
+
+xwininfo: Window id: 0x21f (the root window) (has no name)
+
+  Root window id: 0x21f (the root window) (has no name)
+  Parent window id: 0x0 (none)
+     1 child:
+     0x200001 "tonefer_app.py": ("tonefer_app.py" "")  10x10+10+10  +10+10
+
