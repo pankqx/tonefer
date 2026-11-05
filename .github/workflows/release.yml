@@ -32,29 +32,18 @@ jobs:
           WEBKIT_DISABLE_COMPOSITING_MODE: "1"
         run: |
           mkdir -p shots
-          timeout 90 xvfb-run -a -s "-screen 0 1440x900x24" bash -c '
+          timeout 150 xvfb-run -a -s "-screen 0 1440x900x24" bash -c '
             tonefer > app.log 2>&1 &
             APP=$!
-            # Wait for the window to map, then past the 5-second start-up animation.
-            for i in $(seq 1 60); do xwininfo -root -tree | grep -qi "tonefer" && break; sleep 0.5; done
+            # A bare CI desktop has no portals, so D-Bus look-ups can stall start-up for a while.
+            # Wait for the real window (not just GTK's hidden leader window), up to 90 s.
+            T0=$(date +%s)
+            for i in $(seq 1 180); do xwininfo -root -tree | grep -q "(\"tonefer\" \"Tonefer\")" && break; sleep 0.5; done
+            echo "window after $(( $(date +%s) - T0 )) s" > shots/diag.txt
+            xwininfo -root -tree >> shots/diag.txt
             sleep 3; import -window root shots/ubuntu-app-loading.png
             sleep 5; import -window root shots/ubuntu-app.png
-            xwininfo -root -tree > shots/windows.txt
             kill $APP 2>/dev/null; wait $APP 2>/dev/null; true'
-          {
-            echo "userns restrict: $(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>&1)"
-            echo "bwrap: $(bwrap --ro-bind / / true 2>&1 && echo ok)"
-            dpkg -l | grep -E "webkit2gtk|apparmor " | awk '{print $2, $3}'
-            ls /etc/apparmor.d | grep -iE "bwrap|webkit|userns" || true
-          } > shots/diag.txt 2>&1
-          ls -la /dev/dri >> shots/diag.txt 2>&1 || true
-          # Where is the app after 10 s? (Python stacks + GLib debug messages)
-          timeout 60 xvfb-run -a -s "-screen 0 1440x900x24" bash -c '
-            G_MESSAGES_DEBUG=all python3 -c "import faulthandler,sys,runpy; faulthandler.dump_traceback_later(10, exit=False); sys.argv=[\"tonefer_app.py\"]; runpy.run_path(\"/opt/tonefer/desktop/tonefer_app.py\", run_name=\"__main__\")" > app-trace.log 2>&1 &
-            APP=$!
-            sleep 13; import -window root shots/ubuntu-app-trace.png
-            kill $APP 2>/dev/null; wait $APP 2>/dev/null; true'
-          tail -c 60000 app-trace.log > shots/app-trace.log 2>/dev/null || true
       - uses: actions/upload-artifact@v4
         with:
           name: deb
