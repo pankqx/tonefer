@@ -1,0 +1,851 @@
+﻿2026-11-05 17:29:42.391   Log opened. (Time zone: UTC+00:00)
+2026-11-05 17:29:42.391   Setup version: Inno Setup version 6.7.1
+2026-11-05 17:29:42.391   Original Setup EXE: D:\a\tonefer\tonefer\dist\ToneferSetup.exe
+2026-11-05 17:29:42.391   Setup command line: /SL5="$401E2,14279039,858112,D:\a\tonefer\tonefer\dist\ToneferSetup.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /TASKS=startup /LOG=shots\install.log
+2026-11-05 17:29:42.391   Windows version: 10.0.26100
+2026-11-05 17:29:42.391   Windows architecture: x64 (64-bit)
+2026-11-05 17:29:42.391   Machine types supported by system: x86 x64
+2026-11-05 17:29:42.391   User privileges: Administrative
+2026-11-05 17:29:42.395   Administrative install mode: Yes
+2026-11-05 17:29:42.395   Install mode root key: HKEY_LOCAL_MACHINE
+2026-11-05 17:29:42.395   64-bit install mode: Yes
+2026-11-05 17:29:42.395   RedirectionGuard status for current process: Enabled in enforcing mode
+2026-11-05 17:29:42.397   Created protected temporary directory: C:\Users\RUNNER~1\AppData\Local\Temp\is-I7QUXP9OXZ.tmp
+2026-11-05 17:29:42.882   Found 51 files to register with RestartManager.
+2026-11-05 17:29:42.882   Calling RestartManager's RmGetList.
+2026-11-05 17:29:42.889   RmGetList finished successfully.
+2026-11-05 17:29:42.889   RestartManager found no applications using one of our files.
+2026-11-05 17:29:42.892   Starting the installation process.
+2026-11-05 17:29:42.894   Creating directory: C:\Program Files\Tonefer
+2026-11-05 17:29:42.894   Directory for uninstall files: C:\Program Files\Tonefer
+2026-11-05 17:29:42.894   Creating new uninstall log: C:\Program Files\Tonefer\unins000.dat
+2026-11-05 17:29:42.971   -- File entry --
+2026-11-05 17:29:42.971   Dest filename: C:\Program Files\Tonefer\unins000.exe
+2026-11-05 17:29:42.971   Non-default bitness: 32-bit
+2026-11-05 17:29:43.068   Time stamp of our file: 2026-11-05 17:29:42.050
+2026-11-05 17:29:43.068   Installing the file.
+2026-11-05 17:29:43.084   Successfully installed the file.
+2026-11-05 17:29:43.084   -- File entry --
+2026-11-05 17:29:43.084   Dest filename: C:\Program Files\Tonefer\Tonefer.exe
+2026-11-05 17:29:43.085   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.085   Installing the file.
+2026-11-05 17:29:43.158   Successfully installed the file.
+2026-11-05 17:29:43.158   -- File entry --
+2026-11-05 17:29:43.158   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-console-l1-1-0.dll
+2026-11-05 17:29:43.158   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.158   Installing the file.
+2026-11-05 17:29:43.158   Creating directory: C:\Program Files\Tonefer\_internal
+2026-11-05 17:29:43.160   Successfully installed the file.
+2026-11-05 17:29:43.160   -- File entry --
+2026-11-05 17:29:43.160   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-datetime-l1-1-0.dll
+2026-11-05 17:29:43.160   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.160   Installing the file.
+2026-11-05 17:29:43.160   Successfully installed the file.
+2026-11-05 17:29:43.160   -- File entry --
+2026-11-05 17:29:43.160   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-debug-l1-1-0.dll
+2026-11-05 17:29:43.160   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.160   Installing the file.
+2026-11-05 17:29:43.164   Successfully installed the file.
+2026-11-05 17:29:43.164   -- File entry --
+2026-11-05 17:29:43.164   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-errorhandling-l1-1-0.dll
+2026-11-05 17:29:43.164   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.164   Installing the file.
+2026-11-05 17:29:43.164   Successfully installed the file.
+2026-11-05 17:29:43.164   -- File entry --
+2026-11-05 17:29:43.164   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-fibers-l1-1-0.dll
+2026-11-05 17:29:43.164   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.164   Installing the file.
+2026-11-05 17:29:43.167   Successfully installed the file.
+2026-11-05 17:29:43.167   -- File entry --
+2026-11-05 17:29:43.167   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-fibers-l1-1-1.dll
+2026-11-05 17:29:43.167   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.167   Installing the file.
+2026-11-05 17:29:43.168   Successfully installed the file.
+2026-11-05 17:29:43.168   -- File entry --
+2026-11-05 17:29:43.168   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-file-l1-1-0.dll
+2026-11-05 17:29:43.168   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.168   Installing the file.
+2026-11-05 17:29:43.169   Successfully installed the file.
+2026-11-05 17:29:43.169   -- File entry --
+2026-11-05 17:29:43.169   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-file-l1-2-0.dll
+2026-11-05 17:29:43.169   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.169   Installing the file.
+2026-11-05 17:29:43.171   Successfully installed the file.
+2026-11-05 17:29:43.171   -- File entry --
+2026-11-05 17:29:43.171   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-file-l2-1-0.dll
+2026-11-05 17:29:43.171   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.171   Installing the file.
+2026-11-05 17:29:43.172   Successfully installed the file.
+2026-11-05 17:29:43.172   -- File entry --
+2026-11-05 17:29:43.172   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-handle-l1-1-0.dll
+2026-11-05 17:29:43.172   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.172   Installing the file.
+2026-11-05 17:29:43.173   Successfully installed the file.
+2026-11-05 17:29:43.173   -- File entry --
+2026-11-05 17:29:43.173   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-heap-l1-1-0.dll
+2026-11-05 17:29:43.173   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.173   Installing the file.
+2026-11-05 17:29:43.174   Successfully installed the file.
+2026-11-05 17:29:43.174   -- File entry --
+2026-11-05 17:29:43.174   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-interlocked-l1-1-0.dll
+2026-11-05 17:29:43.175   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.175   Installing the file.
+2026-11-05 17:29:43.175   Successfully installed the file.
+2026-11-05 17:29:43.175   -- File entry --
+2026-11-05 17:29:43.175   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-kernel32-legacy-l1-1-1.dll
+2026-11-05 17:29:43.176   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.176   Installing the file.
+2026-11-05 17:29:43.177   Successfully installed the file.
+2026-11-05 17:29:43.177   -- File entry --
+2026-11-05 17:29:43.177   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-libraryloader-l1-1-0.dll
+2026-11-05 17:29:43.177   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.177   Installing the file.
+2026-11-05 17:29:43.178   Successfully installed the file.
+2026-11-05 17:29:43.178   -- File entry --
+2026-11-05 17:29:43.178   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-localization-l1-2-0.dll
+2026-11-05 17:29:43.178   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.178   Installing the file.
+2026-11-05 17:29:43.180   Successfully installed the file.
+2026-11-05 17:29:43.180   -- File entry --
+2026-11-05 17:29:43.180   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-memory-l1-1-0.dll
+2026-11-05 17:29:43.180   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.180   Installing the file.
+2026-11-05 17:29:43.182   Successfully installed the file.
+2026-11-05 17:29:43.182   -- File entry --
+2026-11-05 17:29:43.182   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-namedpipe-l1-1-0.dll
+2026-11-05 17:29:43.182   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.182   Installing the file.
+2026-11-05 17:29:43.184   Successfully installed the file.
+2026-11-05 17:29:43.184   -- File entry --
+2026-11-05 17:29:43.184   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-processenvironment-l1-1-0.dll
+2026-11-05 17:29:43.184   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.184   Installing the file.
+2026-11-05 17:29:43.184   Successfully installed the file.
+2026-11-05 17:29:43.184   -- File entry --
+2026-11-05 17:29:43.184   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-processthreads-l1-1-0.dll
+2026-11-05 17:29:43.184   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.184   Installing the file.
+2026-11-05 17:29:43.186   Successfully installed the file.
+2026-11-05 17:29:43.186   -- File entry --
+2026-11-05 17:29:43.186   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-processthreads-l1-1-1.dll
+2026-11-05 17:29:43.186   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.186   Installing the file.
+2026-11-05 17:29:43.186   Successfully installed the file.
+2026-11-05 17:29:43.186   -- File entry --
+2026-11-05 17:29:43.188   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-profile-l1-1-0.dll
+2026-11-05 17:29:43.188   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.188   Installing the file.
+2026-11-05 17:29:43.188   Successfully installed the file.
+2026-11-05 17:29:43.188   -- File entry --
+2026-11-05 17:29:43.188   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-rtlsupport-l1-1-0.dll
+2026-11-05 17:29:43.188   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.188   Installing the file.
+2026-11-05 17:29:43.190   Successfully installed the file.
+2026-11-05 17:29:43.190   -- File entry --
+2026-11-05 17:29:43.190   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-string-l1-1-0.dll
+2026-11-05 17:29:43.190   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.190   Installing the file.
+2026-11-05 17:29:43.190   Successfully installed the file.
+2026-11-05 17:29:43.190   -- File entry --
+2026-11-05 17:29:43.190   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-synch-l1-1-0.dll
+2026-11-05 17:29:43.190   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.190   Installing the file.
+2026-11-05 17:29:43.192   Successfully installed the file.
+2026-11-05 17:29:43.192   -- File entry --
+2026-11-05 17:29:43.192   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-synch-l1-2-0.dll
+2026-11-05 17:29:43.192   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.192   Installing the file.
+2026-11-05 17:29:43.194   Successfully installed the file.
+2026-11-05 17:29:43.194   -- File entry --
+2026-11-05 17:29:43.194   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-sysinfo-l1-1-0.dll
+2026-11-05 17:29:43.194   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.194   Installing the file.
+2026-11-05 17:29:43.194   Successfully installed the file.
+2026-11-05 17:29:43.196   -- File entry --
+2026-11-05 17:29:43.196   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-sysinfo-l1-2-0.dll
+2026-11-05 17:29:43.196   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.196   Installing the file.
+2026-11-05 17:29:43.196   Successfully installed the file.
+2026-11-05 17:29:43.196   -- File entry --
+2026-11-05 17:29:43.196   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-timezone-l1-1-0.dll
+2026-11-05 17:29:43.196   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.196   Installing the file.
+2026-11-05 17:29:43.198   Successfully installed the file.
+2026-11-05 17:29:43.198   -- File entry --
+2026-11-05 17:29:43.198   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-core-util-l1-1-0.dll
+2026-11-05 17:29:43.200   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.200   Installing the file.
+2026-11-05 17:29:43.200   Successfully installed the file.
+2026-11-05 17:29:43.200   -- File entry --
+2026-11-05 17:29:43.200   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-crt-conio-l1-1-0.dll
+2026-11-05 17:29:43.200   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.200   Installing the file.
+2026-11-05 17:29:43.202   Successfully installed the file.
+2026-11-05 17:29:43.202   -- File entry --
+2026-11-05 17:29:43.202   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-crt-convert-l1-1-0.dll
+2026-11-05 17:29:43.202   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.202   Installing the file.
+2026-11-05 17:29:43.202   Successfully installed the file.
+2026-11-05 17:29:43.202   -- File entry --
+2026-11-05 17:29:43.202   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-crt-environment-l1-1-0.dll
+2026-11-05 17:29:43.202   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.202   Installing the file.
+2026-11-05 17:29:43.204   Successfully installed the file.
+2026-11-05 17:29:43.204   -- File entry --
+2026-11-05 17:29:43.204   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-crt-filesystem-l1-1-0.dll
+2026-11-05 17:29:43.204   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.204   Installing the file.
+2026-11-05 17:29:43.206   Successfully installed the file.
+2026-11-05 17:29:43.206   -- File entry --
+2026-11-05 17:29:43.206   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-crt-heap-l1-1-0.dll
+2026-11-05 17:29:43.206   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.206   Installing the file.
+2026-11-05 17:29:43.206   Successfully installed the file.
+2026-11-05 17:29:43.206   -- File entry --
+2026-11-05 17:29:43.206   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-crt-locale-l1-1-0.dll
+2026-11-05 17:29:43.206   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.206   Installing the file.
+2026-11-05 17:29:43.210   Successfully installed the file.
+2026-11-05 17:29:43.210   -- File entry --
+2026-11-05 17:29:43.210   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-crt-math-l1-1-0.dll
+2026-11-05 17:29:43.210   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.210   Installing the file.
+2026-11-05 17:29:43.212   Successfully installed the file.
+2026-11-05 17:29:43.212   -- File entry --
+2026-11-05 17:29:43.212   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-crt-process-l1-1-0.dll
+2026-11-05 17:29:43.212   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.212   Installing the file.
+2026-11-05 17:29:43.214   Successfully installed the file.
+2026-11-05 17:29:43.214   -- File entry --
+2026-11-05 17:29:43.214   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-crt-runtime-l1-1-0.dll
+2026-11-05 17:29:43.214   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.214   Installing the file.
+2026-11-05 17:29:43.215   Successfully installed the file.
+2026-11-05 17:29:43.215   -- File entry --
+2026-11-05 17:29:43.215   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-crt-stdio-l1-1-0.dll
+2026-11-05 17:29:43.216   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.216   Installing the file.
+2026-11-05 17:29:43.217   Successfully installed the file.
+2026-11-05 17:29:43.217   -- File entry --
+2026-11-05 17:29:43.217   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-crt-string-l1-1-0.dll
+2026-11-05 17:29:43.217   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.217   Installing the file.
+2026-11-05 17:29:43.218   Successfully installed the file.
+2026-11-05 17:29:43.218   -- File entry --
+2026-11-05 17:29:43.218   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-crt-time-l1-1-0.dll
+2026-11-05 17:29:43.218   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.218   Installing the file.
+2026-11-05 17:29:43.221   Successfully installed the file.
+2026-11-05 17:29:43.221   -- File entry --
+2026-11-05 17:29:43.221   Dest filename: C:\Program Files\Tonefer\_internal\api-ms-win-crt-utility-l1-1-0.dll
+2026-11-05 17:29:43.221   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.221   Installing the file.
+2026-11-05 17:29:43.222   Successfully installed the file.
+2026-11-05 17:29:43.222   -- File entry --
+2026-11-05 17:29:43.222   Dest filename: C:\Program Files\Tonefer\_internal\base_library.zip
+2026-11-05 17:29:43.223   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.223   Installing the file.
+2026-11-05 17:29:43.254   Successfully installed the file.
+2026-11-05 17:29:43.254   -- File entry --
+2026-11-05 17:29:43.254   Dest filename: C:\Program Files\Tonefer\_internal\libcrypto-3.dll
+2026-11-05 17:29:43.254   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.254   Installing the file.
+2026-11-05 17:29:43.389   Successfully installed the file.
+2026-11-05 17:29:43.389   -- File entry --
+2026-11-05 17:29:43.389   Dest filename: C:\Program Files\Tonefer\_internal\libffi-8.dll
+2026-11-05 17:29:43.389   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.389   Installing the file.
+2026-11-05 17:29:43.391   Successfully installed the file.
+2026-11-05 17:29:43.391   -- File entry --
+2026-11-05 17:29:43.391   Dest filename: C:\Program Files\Tonefer\_internal\libssl-3.dll
+2026-11-05 17:29:43.391   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.391   Installing the file.
+2026-11-05 17:29:43.413   Successfully installed the file.
+2026-11-05 17:29:43.413   -- File entry --
+2026-11-05 17:29:43.413   Dest filename: C:\Program Files\Tonefer\_internal\pyexpat.pyd
+2026-11-05 17:29:43.413   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.413   Installing the file.
+2026-11-05 17:29:43.420   Successfully installed the file.
+2026-11-05 17:29:43.420   -- File entry --
+2026-11-05 17:29:43.422   Dest filename: C:\Program Files\Tonefer\_internal\python3.dll
+2026-11-05 17:29:43.422   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.422   Installing the file.
+2026-11-05 17:29:43.424   Successfully installed the file.
+2026-11-05 17:29:43.424   -- File entry --
+2026-11-05 17:29:43.424   Dest filename: C:\Program Files\Tonefer\_internal\python312.dll
+2026-11-05 17:29:43.424   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.424   Installing the file.
+2026-11-05 17:29:43.606   Successfully installed the file.
+2026-11-05 17:29:43.608   -- File entry --
+2026-11-05 17:29:43.608   Dest filename: C:\Program Files\Tonefer\_internal\select.pyd
+2026-11-05 17:29:43.608   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.608   Installing the file.
+2026-11-05 17:29:43.608   Successfully installed the file.
+2026-11-05 17:29:43.608   -- File entry --
+2026-11-05 17:29:43.610   Dest filename: C:\Program Files\Tonefer\_internal\ucrtbase.dll
+2026-11-05 17:29:43.610   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.610   Installing the file.
+2026-11-05 17:29:43.654   Successfully installed the file.
+2026-11-05 17:29:43.654   -- File entry --
+2026-11-05 17:29:43.654   Dest filename: C:\Program Files\Tonefer\_internal\unicodedata.pyd
+2026-11-05 17:29:43.654   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.654   Installing the file.
+2026-11-05 17:29:43.688   Successfully installed the file.
+2026-11-05 17:29:43.688   -- File entry --
+2026-11-05 17:29:43.688   Dest filename: C:\Program Files\Tonefer\_internal\VCRUNTIME140.dll
+2026-11-05 17:29:43.688   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.688   Installing the file.
+2026-11-05 17:29:43.692   Successfully installed the file.
+2026-11-05 17:29:43.692   -- File entry --
+2026-11-05 17:29:43.692   Dest filename: C:\Program Files\Tonefer\_internal\VCRUNTIME140_1.dll
+2026-11-05 17:29:43.692   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.692   Installing the file.
+2026-11-05 17:29:43.696   Successfully installed the file.
+2026-11-05 17:29:43.696   -- File entry --
+2026-11-05 17:29:43.696   Dest filename: C:\Program Files\Tonefer\_internal\VERSION
+2026-11-05 17:29:43.696   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.696   Installing the file.
+2026-11-05 17:29:43.698   Successfully installed the file.
+2026-11-05 17:29:43.698   -- File entry --
+2026-11-05 17:29:43.698   Dest filename: C:\Program Files\Tonefer\_internal\_asyncio.pyd
+2026-11-05 17:29:43.698   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.698   Installing the file.
+2026-11-05 17:29:43.700   Successfully installed the file.
+2026-11-05 17:29:43.700   -- File entry --
+2026-11-05 17:29:43.700   Dest filename: C:\Program Files\Tonefer\_internal\_bz2.pyd
+2026-11-05 17:29:43.700   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.700   Installing the file.
+2026-11-05 17:29:43.703   Successfully installed the file.
+2026-11-05 17:29:43.703   -- File entry --
+2026-11-05 17:29:43.703   Dest filename: C:\Program Files\Tonefer\_internal\_cffi_backend.cp312-win_amd64.pyd
+2026-11-05 17:29:43.703   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.703   Installing the file.
+2026-11-05 17:29:43.709   Successfully installed the file.
+2026-11-05 17:29:43.709   -- File entry --
+2026-11-05 17:29:43.709   Dest filename: C:\Program Files\Tonefer\_internal\_ctypes.pyd
+2026-11-05 17:29:43.709   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.709   Installing the file.
+2026-11-05 17:29:43.719   Successfully installed the file.
+2026-11-05 17:29:43.719   -- File entry --
+2026-11-05 17:29:43.719   Dest filename: C:\Program Files\Tonefer\_internal\_decimal.pyd
+2026-11-05 17:29:43.719   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.719   Installing the file.
+2026-11-05 17:29:43.727   Successfully installed the file.
+2026-11-05 17:29:43.727   -- File entry --
+2026-11-05 17:29:43.729   Dest filename: C:\Program Files\Tonefer\_internal\_elementtree.pyd
+2026-11-05 17:29:43.729   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.729   Installing the file.
+2026-11-05 17:29:43.733   Successfully installed the file.
+2026-11-05 17:29:43.733   -- File entry --
+2026-11-05 17:29:43.733   Dest filename: C:\Program Files\Tonefer\_internal\_hashlib.pyd
+2026-11-05 17:29:43.733   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.733   Installing the file.
+2026-11-05 17:29:43.737   Successfully installed the file.
+2026-11-05 17:29:43.737   -- File entry --
+2026-11-05 17:29:43.737   Dest filename: C:\Program Files\Tonefer\_internal\_lzma.pyd
+2026-11-05 17:29:43.737   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.737   Installing the file.
+2026-11-05 17:29:43.745   Successfully installed the file.
+2026-11-05 17:29:43.745   -- File entry --
+2026-11-05 17:29:43.745   Dest filename: C:\Program Files\Tonefer\_internal\_multiprocessing.pyd
+2026-11-05 17:29:43.746   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.746   Installing the file.
+2026-11-05 17:29:43.746   Successfully installed the file.
+2026-11-05 17:29:43.747   -- File entry --
+2026-11-05 17:29:43.747   Dest filename: C:\Program Files\Tonefer\_internal\_overlapped.pyd
+2026-11-05 17:29:43.747   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.747   Installing the file.
+2026-11-05 17:29:43.749   Successfully installed the file.
+2026-11-05 17:29:43.749   -- File entry --
+2026-11-05 17:29:43.750   Dest filename: C:\Program Files\Tonefer\_internal\_queue.pyd
+2026-11-05 17:29:43.750   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.750   Installing the file.
+2026-11-05 17:29:43.751   Successfully installed the file.
+2026-11-05 17:29:43.751   -- File entry --
+2026-11-05 17:29:43.751   Dest filename: C:\Program Files\Tonefer\_internal\_socket.pyd
+2026-11-05 17:29:43.751   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.751   Installing the file.
+2026-11-05 17:29:43.755   Successfully installed the file.
+2026-11-05 17:29:43.755   -- File entry --
+2026-11-05 17:29:43.755   Dest filename: C:\Program Files\Tonefer\_internal\_ssl.pyd
+2026-11-05 17:29:43.755   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.755   Installing the file.
+2026-11-05 17:29:43.761   Successfully installed the file.
+2026-11-05 17:29:43.761   -- File entry --
+2026-11-05 17:29:43.761   Dest filename: C:\Program Files\Tonefer\_internal\_uuid.pyd
+2026-11-05 17:29:43.761   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.761   Installing the file.
+2026-11-05 17:29:43.763   Successfully installed the file.
+2026-11-05 17:29:43.763   -- File entry --
+2026-11-05 17:29:43.763   Dest filename: C:\Program Files\Tonefer\_internal\_wmi.pyd
+2026-11-05 17:29:43.763   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.763   Installing the file.
+2026-11-05 17:29:43.765   Successfully installed the file.
+2026-11-05 17:29:43.765   -- File entry --
+2026-11-05 17:29:43.765   Dest filename: C:\Program Files\Tonefer\_internal\aiohttp\_http_parser.cp312-win_amd64.pyd
+2026-11-05 17:29:43.765   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.765   Installing the file.
+2026-11-05 17:29:43.765   Creating directory: C:\Program Files\Tonefer\_internal\aiohttp
+2026-11-05 17:29:43.775   Successfully installed the file.
+2026-11-05 17:29:43.775   -- File entry --
+2026-11-05 17:29:43.775   Dest filename: C:\Program Files\Tonefer\_internal\aiohttp\_http_writer.cp312-win_amd64.pyd
+2026-11-05 17:29:43.775   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.775   Installing the file.
+2026-11-05 17:29:43.777   Successfully installed the file.
+2026-11-05 17:29:43.777   -- File entry --
+2026-11-05 17:29:43.777   Dest filename: C:\Program Files\Tonefer\_internal\aiohttp\_websocket\mask.cp312-win_amd64.pyd
+2026-11-05 17:29:43.779   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.779   Installing the file.
+2026-11-05 17:29:43.779   Creating directory: C:\Program Files\Tonefer\_internal\aiohttp\_websocket
+2026-11-05 17:29:43.783   Successfully installed the file.
+2026-11-05 17:29:43.783   -- File entry --
+2026-11-05 17:29:43.783   Dest filename: C:\Program Files\Tonefer\_internal\aiohttp\_websocket\reader_c.cp312-win_amd64.pyd
+2026-11-05 17:29:43.783   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.783   Installing the file.
+2026-11-05 17:29:43.787   Successfully installed the file.
+2026-11-05 17:29:43.787   -- File entry --
+2026-11-05 17:29:43.787   Dest filename: C:\Program Files\Tonefer\_internal\attrs-26.1.0.dist-info\INSTALLER
+2026-11-05 17:29:43.789   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.789   Installing the file.
+2026-11-05 17:29:43.789   Creating directory: C:\Program Files\Tonefer\_internal\attrs-26.1.0.dist-info
+2026-11-05 17:29:43.789   Successfully installed the file.
+2026-11-05 17:29:43.789   -- File entry --
+2026-11-05 17:29:43.789   Dest filename: C:\Program Files\Tonefer\_internal\attrs-26.1.0.dist-info\METADATA
+2026-11-05 17:29:43.789   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.789   Installing the file.
+2026-11-05 17:29:43.791   Successfully installed the file.
+2026-11-05 17:29:43.791   -- File entry --
+2026-11-05 17:29:43.791   Dest filename: C:\Program Files\Tonefer\_internal\attrs-26.1.0.dist-info\RECORD
+2026-11-05 17:29:43.791   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.791   Installing the file.
+2026-11-05 17:29:43.793   Successfully installed the file.
+2026-11-05 17:29:43.793   -- File entry --
+2026-11-05 17:29:43.793   Dest filename: C:\Program Files\Tonefer\_internal\attrs-26.1.0.dist-info\WHEEL
+2026-11-05 17:29:43.793   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.793   Installing the file.
+2026-11-05 17:29:43.795   Successfully installed the file.
+2026-11-05 17:29:43.795   -- File entry --
+2026-11-05 17:29:43.795   Dest filename: C:\Program Files\Tonefer\_internal\attrs-26.1.0.dist-info\licenses\LICENSE
+2026-11-05 17:29:43.795   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.795   Installing the file.
+2026-11-05 17:29:43.795   Creating directory: C:\Program Files\Tonefer\_internal\attrs-26.1.0.dist-info\licenses
+2026-11-05 17:29:43.795   Successfully installed the file.
+2026-11-05 17:29:43.795   -- File entry --
+2026-11-05 17:29:43.795   Dest filename: C:\Program Files\Tonefer\_internal\frozenlist\_frozenlist.cp312-win_amd64.pyd
+2026-11-05 17:29:43.795   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.795   Installing the file.
+2026-11-05 17:29:43.797   Creating directory: C:\Program Files\Tonefer\_internal\frozenlist
+2026-11-05 17:29:43.798   Successfully installed the file.
+2026-11-05 17:29:43.798   -- File entry --
+2026-11-05 17:29:43.798   Dest filename: C:\Program Files\Tonefer\_internal\multidict\_multidict.cp312-win_amd64.pyd
+2026-11-05 17:29:43.798   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.798   Installing the file.
+2026-11-05 17:29:43.798   Creating directory: C:\Program Files\Tonefer\_internal\multidict
+2026-11-05 17:29:43.805   Successfully installed the file.
+2026-11-05 17:29:43.805   -- File entry --
+2026-11-05 17:29:43.805   Dest filename: C:\Program Files\Tonefer\_internal\nacl\encoding.py
+2026-11-05 17:29:43.805   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.805   Installing the file.
+2026-11-05 17:29:43.805   Creating directory: C:\Program Files\Tonefer\_internal\nacl
+2026-11-05 17:29:43.807   Successfully installed the file.
+2026-11-05 17:29:43.807   -- File entry --
+2026-11-05 17:29:43.807   Dest filename: C:\Program Files\Tonefer\_internal\nacl\exceptions.py
+2026-11-05 17:29:43.807   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.807   Installing the file.
+2026-11-05 17:29:43.807   Successfully installed the file.
+2026-11-05 17:29:43.807   -- File entry --
+2026-11-05 17:29:43.807   Dest filename: C:\Program Files\Tonefer\_internal\nacl\hash.py
+2026-11-05 17:29:43.807   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.807   Installing the file.
+2026-11-05 17:29:43.809   Successfully installed the file.
+2026-11-05 17:29:43.809   -- File entry --
+2026-11-05 17:29:43.809   Dest filename: C:\Program Files\Tonefer\_internal\nacl\hashlib.py
+2026-11-05 17:29:43.809   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.809   Installing the file.
+2026-11-05 17:29:43.809   Successfully installed the file.
+2026-11-05 17:29:43.809   -- File entry --
+2026-11-05 17:29:43.809   Dest filename: C:\Program Files\Tonefer\_internal\nacl\public.py
+2026-11-05 17:29:43.809   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.809   Installing the file.
+2026-11-05 17:29:43.811   Successfully installed the file.
+2026-11-05 17:29:43.811   -- File entry --
+2026-11-05 17:29:43.811   Dest filename: C:\Program Files\Tonefer\_internal\nacl\py.typed
+2026-11-05 17:29:43.811   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.811   Installing the file.
+2026-11-05 17:29:43.813   Successfully installed the file.
+2026-11-05 17:29:43.813   -- File entry --
+2026-11-05 17:29:43.813   Dest filename: C:\Program Files\Tonefer\_internal\nacl\secret.py
+2026-11-05 17:29:43.813   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.813   Installing the file.
+2026-11-05 17:29:43.814   Successfully installed the file.
+2026-11-05 17:29:43.814   -- File entry --
+2026-11-05 17:29:43.814   Dest filename: C:\Program Files\Tonefer\_internal\nacl\signing.py
+2026-11-05 17:29:43.814   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.814   Installing the file.
+2026-11-05 17:29:43.814   Successfully installed the file.
+2026-11-05 17:29:43.814   -- File entry --
+2026-11-05 17:29:43.814   Dest filename: C:\Program Files\Tonefer\_internal\nacl\utils.py
+2026-11-05 17:29:43.814   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.814   Installing the file.
+2026-11-05 17:29:43.816   Successfully installed the file.
+2026-11-05 17:29:43.816   -- File entry --
+2026-11-05 17:29:43.816   Dest filename: C:\Program Files\Tonefer\_internal\nacl\_sodium.pyd
+2026-11-05 17:29:43.816   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.816   Installing the file.
+2026-11-05 17:29:43.830   Successfully installed the file.
+2026-11-05 17:29:43.830   -- File entry --
+2026-11-05 17:29:43.830   Dest filename: C:\Program Files\Tonefer\_internal\nacl\__init__.py
+2026-11-05 17:29:43.830   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.830   Installing the file.
+2026-11-05 17:29:43.830   Successfully installed the file.
+2026-11-05 17:29:43.830   -- File entry --
+2026-11-05 17:29:43.830   Dest filename: C:\Program Files\Tonefer\_internal\nacl\bindings\crypto_aead.py
+2026-11-05 17:29:43.832   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.832   Installing the file.
+2026-11-05 17:29:43.832   Creating directory: C:\Program Files\Tonefer\_internal\nacl\bindings
+2026-11-05 17:29:43.832   Successfully installed the file.
+2026-11-05 17:29:43.832   -- File entry --
+2026-11-05 17:29:43.832   Dest filename: C:\Program Files\Tonefer\_internal\nacl\bindings\crypto_box.py
+2026-11-05 17:29:43.832   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.832   Installing the file.
+2026-11-05 17:29:43.834   Successfully installed the file.
+2026-11-05 17:29:43.834   -- File entry --
+2026-11-05 17:29:43.834   Dest filename: C:\Program Files\Tonefer\_internal\nacl\bindings\crypto_core.py
+2026-11-05 17:29:43.834   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.834   Installing the file.
+2026-11-05 17:29:43.836   Successfully installed the file.
+2026-11-05 17:29:43.836   -- File entry --
+2026-11-05 17:29:43.837   Dest filename: C:\Program Files\Tonefer\_internal\nacl\bindings\crypto_generichash.py
+2026-11-05 17:29:43.837   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.837   Installing the file.
+2026-11-05 17:29:43.839   Successfully installed the file.
+2026-11-05 17:29:43.839   -- File entry --
+2026-11-05 17:29:43.839   Dest filename: C:\Program Files\Tonefer\_internal\nacl\bindings\crypto_hash.py
+2026-11-05 17:29:43.839   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.839   Installing the file.
+2026-11-05 17:29:43.840   Successfully installed the file.
+2026-11-05 17:29:43.840   -- File entry --
+2026-11-05 17:29:43.840   Dest filename: C:\Program Files\Tonefer\_internal\nacl\bindings\crypto_kx.py
+2026-11-05 17:29:43.840   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.840   Installing the file.
+2026-11-05 17:29:43.841   Successfully installed the file.
+2026-11-05 17:29:43.841   -- File entry --
+2026-11-05 17:29:43.841   Dest filename: C:\Program Files\Tonefer\_internal\nacl\bindings\crypto_pwhash.py
+2026-11-05 17:29:43.841   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.841   Installing the file.
+2026-11-05 17:29:43.842   Successfully installed the file.
+2026-11-05 17:29:43.842   -- File entry --
+2026-11-05 17:29:43.842   Dest filename: C:\Program Files\Tonefer\_internal\nacl\bindings\crypto_scalarmult.py
+2026-11-05 17:29:43.843   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.843   Installing the file.
+2026-11-05 17:29:43.843   Successfully installed the file.
+2026-11-05 17:29:43.843   -- File entry --
+2026-11-05 17:29:43.843   Dest filename: C:\Program Files\Tonefer\_internal\nacl\bindings\crypto_secretbox.py
+2026-11-05 17:29:43.843   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.843   Installing the file.
+2026-11-05 17:29:43.844   Successfully installed the file.
+2026-11-05 17:29:43.844   -- File entry --
+2026-11-05 17:29:43.844   Dest filename: C:\Program Files\Tonefer\_internal\nacl\bindings\crypto_secretstream.py
+2026-11-05 17:29:43.845   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.845   Installing the file.
+2026-11-05 17:29:43.846   Successfully installed the file.
+2026-11-05 17:29:43.846   -- File entry --
+2026-11-05 17:29:43.846   Dest filename: C:\Program Files\Tonefer\_internal\nacl\bindings\crypto_shorthash.py
+2026-11-05 17:29:43.846   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.846   Installing the file.
+2026-11-05 17:29:43.846   Successfully installed the file.
+2026-11-05 17:29:43.846   -- File entry --
+2026-11-05 17:29:43.846   Dest filename: C:\Program Files\Tonefer\_internal\nacl\bindings\crypto_sign.py
+2026-11-05 17:29:43.846   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.846   Installing the file.
+2026-11-05 17:29:43.849   Successfully installed the file.
+2026-11-05 17:29:43.849   -- File entry --
+2026-11-05 17:29:43.849   Dest filename: C:\Program Files\Tonefer\_internal\nacl\bindings\randombytes.py
+2026-11-05 17:29:43.849   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.849   Installing the file.
+2026-11-05 17:29:43.849   Successfully installed the file.
+2026-11-05 17:29:43.849   -- File entry --
+2026-11-05 17:29:43.850   Dest filename: C:\Program Files\Tonefer\_internal\nacl\bindings\sodium_core.py
+2026-11-05 17:29:43.850   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.850   Installing the file.
+2026-11-05 17:29:43.851   Successfully installed the file.
+2026-11-05 17:29:43.851   -- File entry --
+2026-11-05 17:29:43.851   Dest filename: C:\Program Files\Tonefer\_internal\nacl\bindings\utils.py
+2026-11-05 17:29:43.851   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.851   Installing the file.
+2026-11-05 17:29:43.852   Successfully installed the file.
+2026-11-05 17:29:43.852   -- File entry --
+2026-11-05 17:29:43.852   Dest filename: C:\Program Files\Tonefer\_internal\nacl\bindings\__init__.py
+2026-11-05 17:29:43.852   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.852   Installing the file.
+2026-11-05 17:29:43.853   Successfully installed the file.
+2026-11-05 17:29:43.853   -- File entry --
+2026-11-05 17:29:43.853   Dest filename: C:\Program Files\Tonefer\_internal\nacl\pwhash\argon2i.py
+2026-11-05 17:29:43.853   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.853   Installing the file.
+2026-11-05 17:29:43.853   Creating directory: C:\Program Files\Tonefer\_internal\nacl\pwhash
+2026-11-05 17:29:43.855   Successfully installed the file.
+2026-11-05 17:29:43.855   -- File entry --
+2026-11-05 17:29:43.855   Dest filename: C:\Program Files\Tonefer\_internal\nacl\pwhash\argon2id.py
+2026-11-05 17:29:43.855   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.855   Installing the file.
+2026-11-05 17:29:43.856   Successfully installed the file.
+2026-11-05 17:29:43.856   -- File entry --
+2026-11-05 17:29:43.856   Dest filename: C:\Program Files\Tonefer\_internal\nacl\pwhash\scrypt.py
+2026-11-05 17:29:43.856   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.856   Installing the file.
+2026-11-05 17:29:43.857   Successfully installed the file.
+2026-11-05 17:29:43.857   -- File entry --
+2026-11-05 17:29:43.857   Dest filename: C:\Program Files\Tonefer\_internal\nacl\pwhash\_argon2.py
+2026-11-05 17:29:43.857   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.857   Installing the file.
+2026-11-05 17:29:43.858   Successfully installed the file.
+2026-11-05 17:29:43.858   -- File entry --
+2026-11-05 17:29:43.858   Dest filename: C:\Program Files\Tonefer\_internal\nacl\pwhash\__init__.py
+2026-11-05 17:29:43.858   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.858   Installing the file.
+2026-11-05 17:29:43.859   Successfully installed the file.
+2026-11-05 17:29:43.859   -- File entry --
+2026-11-05 17:29:43.859   Dest filename: C:\Program Files\Tonefer\_internal\PIL\_avif.cp312-win_amd64.pyd
+2026-11-05 17:29:43.859   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:43.859   Installing the file.
+2026-11-05 17:29:43.859   Creating directory: C:\Program Files\Tonefer\_internal\PIL
+2026-11-05 17:29:44.059   Successfully installed the file.
+2026-11-05 17:29:44.059   -- File entry --
+2026-11-05 17:29:44.059   Dest filename: C:\Program Files\Tonefer\_internal\PIL\_imaging.cp312-win_amd64.pyd
+2026-11-05 17:29:44.059   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.059   Installing the file.
+2026-11-05 17:29:44.140   Successfully installed the file.
+2026-11-05 17:29:44.140   -- File entry --
+2026-11-05 17:29:44.140   Dest filename: C:\Program Files\Tonefer\_internal\PIL\_imagingcms.cp312-win_amd64.pyd
+2026-11-05 17:29:44.140   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.140   Installing the file.
+2026-11-05 17:29:44.237   Successfully installed the file.
+2026-11-05 17:29:44.237   -- File entry --
+2026-11-05 17:29:44.237   Dest filename: C:\Program Files\Tonefer\_internal\PIL\_imagingft.cp312-win_amd64.pyd
+2026-11-05 17:29:44.237   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.237   Installing the file.
+2026-11-05 17:29:44.309   Successfully installed the file.
+2026-11-05 17:29:44.309   -- File entry --
+2026-11-05 17:29:44.309   Dest filename: C:\Program Files\Tonefer\_internal\PIL\_imagingtk.cp312-win_amd64.pyd
+2026-11-05 17:29:44.309   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.309   Installing the file.
+2026-11-05 17:29:44.311   Successfully installed the file.
+2026-11-05 17:29:44.311   -- File entry --
+2026-11-05 17:29:44.311   Dest filename: C:\Program Files\Tonefer\_internal\PIL\_webp.cp312-win_amd64.pyd
+2026-11-05 17:29:44.311   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.311   Installing the file.
+2026-11-05 17:29:44.319   Successfully installed the file.
+2026-11-05 17:29:44.319   -- File entry --
+2026-11-05 17:29:44.319   Dest filename: C:\Program Files\Tonefer\_internal\propcache\_helpers_c.cp312-win_amd64.pyd
+2026-11-05 17:29:44.319   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.319   Installing the file.
+2026-11-05 17:29:44.319   Creating directory: C:\Program Files\Tonefer\_internal\propcache
+2026-11-05 17:29:44.325   Successfully installed the file.
+2026-11-05 17:29:44.325   -- File entry --
+2026-11-05 17:29:44.325   Dest filename: C:\Program Files\Tonefer\_internal\psutil\_psutil_windows.pyd
+2026-11-05 17:29:44.325   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.325   Installing the file.
+2026-11-05 17:29:44.325   Creating directory: C:\Program Files\Tonefer\_internal\psutil
+2026-11-05 17:29:44.329   Successfully installed the file.
+2026-11-05 17:29:44.329   -- File entry --
+2026-11-05 17:29:44.329   Dest filename: C:\Program Files\Tonefer\_internal\pynacl-1.6.2.dist-info\INSTALLER
+2026-11-05 17:29:44.329   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.329   Installing the file.
+2026-11-05 17:29:44.329   Creating directory: C:\Program Files\Tonefer\_internal\pynacl-1.6.2.dist-info
+2026-11-05 17:29:44.330   Successfully installed the file.
+2026-11-05 17:29:44.330   -- File entry --
+2026-11-05 17:29:44.330   Dest filename: C:\Program Files\Tonefer\_internal\pynacl-1.6.2.dist-info\METADATA
+2026-11-05 17:29:44.331   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.331   Installing the file.
+2026-11-05 17:29:44.331   Successfully installed the file.
+2026-11-05 17:29:44.331   -- File entry --
+2026-11-05 17:29:44.331   Dest filename: C:\Program Files\Tonefer\_internal\pynacl-1.6.2.dist-info\RECORD
+2026-11-05 17:29:44.331   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.331   Installing the file.
+2026-11-05 17:29:44.333   Successfully installed the file.
+2026-11-05 17:29:44.333   -- File entry --
+2026-11-05 17:29:44.333   Dest filename: C:\Program Files\Tonefer\_internal\pynacl-1.6.2.dist-info\REQUESTED
+2026-11-05 17:29:44.335   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.335   Installing the file.
+2026-11-05 17:29:44.335   Successfully installed the file.
+2026-11-05 17:29:44.335   -- File entry --
+2026-11-05 17:29:44.335   Dest filename: C:\Program Files\Tonefer\_internal\pynacl-1.6.2.dist-info\top_level.txt
+2026-11-05 17:29:44.335   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.335   Installing the file.
+2026-11-05 17:29:44.335   Successfully installed the file.
+2026-11-05 17:29:44.335   -- File entry --
+2026-11-05 17:29:44.335   Dest filename: C:\Program Files\Tonefer\_internal\pynacl-1.6.2.dist-info\WHEEL
+2026-11-05 17:29:44.337   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.337   Installing the file.
+2026-11-05 17:29:44.337   Successfully installed the file.
+2026-11-05 17:29:44.337   -- File entry --
+2026-11-05 17:29:44.337   Dest filename: C:\Program Files\Tonefer\_internal\pynacl-1.6.2.dist-info\licenses\LICENSE
+2026-11-05 17:29:44.337   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.337   Installing the file.
+2026-11-05 17:29:44.337   Creating directory: C:\Program Files\Tonefer\_internal\pynacl-1.6.2.dist-info\licenses
+2026-11-05 17:29:44.339   Successfully installed the file.
+2026-11-05 17:29:44.339   -- File entry --
+2026-11-05 17:29:44.339   Dest filename: C:\Program Files\Tonefer\_internal\pynacl-1.6.2.dist-info\licenses\licenses\LICENSE.libsodium.txt
+2026-11-05 17:29:44.339   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.339   Installing the file.
+2026-11-05 17:29:44.339   Creating directory: C:\Program Files\Tonefer\_internal\pynacl-1.6.2.dist-info\licenses\licenses
+2026-11-05 17:29:44.341   Successfully installed the file.
+2026-11-05 17:29:44.341   -- File entry --
+2026-11-05 17:29:44.341   Dest filename: C:\Program Files\Tonefer\_internal\qrcode-8.2.dist-info\entry_points.txt
+2026-11-05 17:29:44.341   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.341   Installing the file.
+2026-11-05 17:29:44.341   Creating directory: C:\Program Files\Tonefer\_internal\qrcode-8.2.dist-info
+2026-11-05 17:29:44.341   Successfully installed the file.
+2026-11-05 17:29:44.341   -- File entry --
+2026-11-05 17:29:44.341   Dest filename: C:\Program Files\Tonefer\_internal\qrcode-8.2.dist-info\INSTALLER
+2026-11-05 17:29:44.341   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.341   Installing the file.
+2026-11-05 17:29:44.343   Successfully installed the file.
+2026-11-05 17:29:44.343   -- File entry --
+2026-11-05 17:29:44.343   Dest filename: C:\Program Files\Tonefer\_internal\qrcode-8.2.dist-info\LICENSE
+2026-11-05 17:29:44.343   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.343   Installing the file.
+2026-11-05 17:29:44.345   Successfully installed the file.
+2026-11-05 17:29:44.345   -- File entry --
+2026-11-05 17:29:44.345   Dest filename: C:\Program Files\Tonefer\_internal\qrcode-8.2.dist-info\METADATA
+2026-11-05 17:29:44.345   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.345   Installing the file.
+2026-11-05 17:29:44.346   Successfully installed the file.
+2026-11-05 17:29:44.346   -- File entry --
+2026-11-05 17:29:44.347   Dest filename: C:\Program Files\Tonefer\_internal\qrcode-8.2.dist-info\RECORD
+2026-11-05 17:29:44.347   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.347   Installing the file.
+2026-11-05 17:29:44.347   Successfully installed the file.
+2026-11-05 17:29:44.347   -- File entry --
+2026-11-05 17:29:44.347   Dest filename: C:\Program Files\Tonefer\_internal\qrcode-8.2.dist-info\REQUESTED
+2026-11-05 17:29:44.347   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.347   Installing the file.
+2026-11-05 17:29:44.348   Successfully installed the file.
+2026-11-05 17:29:44.348   -- File entry --
+2026-11-05 17:29:44.349   Dest filename: C:\Program Files\Tonefer\_internal\qrcode-8.2.dist-info\WHEEL
+2026-11-05 17:29:44.349   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.349   Installing the file.
+2026-11-05 17:29:44.349   Successfully installed the file.
+2026-11-05 17:29:44.349   -- File entry --
+2026-11-05 17:29:44.349   Dest filename: C:\Program Files\Tonefer\_internal\web\desk\index.html
+2026-11-05 17:29:44.349   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.349   Installing the file.
+2026-11-05 17:29:44.349   Creating directory: C:\Program Files\Tonefer\_internal\web
+2026-11-05 17:29:44.349   Creating directory: C:\Program Files\Tonefer\_internal\web\desk
+2026-11-05 17:29:44.351   Successfully installed the file.
+2026-11-05 17:29:44.351   -- File entry --
+2026-11-05 17:29:44.351   Dest filename: C:\Program Files\Tonefer\_internal\web\phone\index.html
+2026-11-05 17:29:44.351   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.351   Installing the file.
+2026-11-05 17:29:44.351   Creating directory: C:\Program Files\Tonefer\_internal\web\phone
+2026-11-05 17:29:44.353   Successfully installed the file.
+2026-11-05 17:29:44.353   -- File entry --
+2026-11-05 17:29:44.353   Dest filename: C:\Program Files\Tonefer\_internal\web\static\common.js
+2026-11-05 17:29:44.353   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.353   Installing the file.
+2026-11-05 17:29:44.353   Creating directory: C:\Program Files\Tonefer\_internal\web\static
+2026-11-05 17:29:44.354   Successfully installed the file.
+2026-11-05 17:29:44.354   -- File entry --
+2026-11-05 17:29:44.354   Dest filename: C:\Program Files\Tonefer\_internal\web\static\desk.js
+2026-11-05 17:29:44.354   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.354   Installing the file.
+2026-11-05 17:29:44.356   Successfully installed the file.
+2026-11-05 17:29:44.356   -- File entry --
+2026-11-05 17:29:44.356   Dest filename: C:\Program Files\Tonefer\_internal\web\static\icon.svg
+2026-11-05 17:29:44.356   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.356   Installing the file.
+2026-11-05 17:29:44.358   Successfully installed the file.
+2026-11-05 17:29:44.358   -- File entry --
+2026-11-05 17:29:44.358   Dest filename: C:\Program Files\Tonefer\_internal\web\static\manifest.json
+2026-11-05 17:29:44.358   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.358   Installing the file.
+2026-11-05 17:29:44.358   Successfully installed the file.
+2026-11-05 17:29:44.358   -- File entry --
+2026-11-05 17:29:44.358   Dest filename: C:\Program Files\Tonefer\_internal\web\static\nacl-fast.min.js
+2026-11-05 17:29:44.358   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.358   Installing the file.
+2026-11-05 17:29:44.363   Successfully installed the file.
+2026-11-05 17:29:44.363   -- File entry --
+2026-11-05 17:29:44.363   Dest filename: C:\Program Files\Tonefer\_internal\web\static\nacl-LICENSE.txt
+2026-11-05 17:29:44.364   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.364   Installing the file.
+2026-11-05 17:29:44.365   Successfully installed the file.
+2026-11-05 17:29:44.365   -- File entry --
+2026-11-05 17:29:44.365   Dest filename: C:\Program Files\Tonefer\_internal\web\static\phone.js
+2026-11-05 17:29:44.365   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.365   Installing the file.
+2026-11-05 17:29:44.367   Successfully installed the file.
+2026-11-05 17:29:44.367   -- File entry --
+2026-11-05 17:29:44.367   Dest filename: C:\Program Files\Tonefer\_internal\web\static\tonefer.css
+2026-11-05 17:29:44.367   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.367   Installing the file.
+2026-11-05 17:29:44.367   Successfully installed the file.
+2026-11-05 17:29:44.367   -- File entry --
+2026-11-05 17:29:44.367   Dest filename: C:\Program Files\Tonefer\_internal\web\static\fonts\OFL-ibm-plex.txt
+2026-11-05 17:29:44.367   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.367   Installing the file.
+2026-11-05 17:29:44.368   Creating directory: C:\Program Files\Tonefer\_internal\web\static\fonts
+2026-11-05 17:29:44.369   Successfully installed the file.
+2026-11-05 17:29:44.369   -- File entry --
+2026-11-05 17:29:44.369   Dest filename: C:\Program Files\Tonefer\_internal\web\static\fonts\plex-mono-400.woff2
+2026-11-05 17:29:44.369   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.369   Installing the file.
+2026-11-05 17:29:44.370   Successfully installed the file.
+2026-11-05 17:29:44.370   -- File entry --
+2026-11-05 17:29:44.370   Dest filename: C:\Program Files\Tonefer\_internal\web\static\fonts\plex-mono-400i.woff2
+2026-11-05 17:29:44.370   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.370   Installing the file.
+2026-11-05 17:29:44.374   Successfully installed the file.
+2026-11-05 17:29:44.374   -- File entry --
+2026-11-05 17:29:44.374   Dest filename: C:\Program Files\Tonefer\_internal\web\static\fonts\plex-mono-500.woff2
+2026-11-05 17:29:44.374   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.374   Installing the file.
+2026-11-05 17:29:44.376   Successfully installed the file.
+2026-11-05 17:29:44.376   -- File entry --
+2026-11-05 17:29:44.376   Dest filename: C:\Program Files\Tonefer\_internal\web\static\fonts\plex-mono-600.woff2
+2026-11-05 17:29:44.376   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.376   Installing the file.
+2026-11-05 17:29:44.378   Successfully installed the file.
+2026-11-05 17:29:44.378   -- File entry --
+2026-11-05 17:29:44.378   Dest filename: C:\Program Files\Tonefer\_internal\yarl\_quoting_c.cp312-win_amd64.pyd
+2026-11-05 17:29:44.378   Time stamp of our file: 2026-11-05 17:29:28.000
+2026-11-05 17:29:44.378   Installing the file.
+2026-11-05 17:29:44.378   Creating directory: C:\Program Files\Tonefer\_internal\yarl
+2026-11-05 17:29:44.382   Successfully installed the file.
+2026-11-05 17:29:44.382   -- Icon entry --
+2026-11-05 17:29:44.382   Dest filename: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Tonefer\Tonefer.lnk
+2026-11-05 17:29:44.382   Creating directory: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Tonefer
+2026-11-05 17:29:44.408   Creating the icon.
+2026-11-05 17:29:44.729   Successfully created the icon.
+2026-11-05 17:29:44.735   -- Icon entry --
+2026-11-05 17:29:44.735   Dest filename: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Tonefer\Tonefer (open in browser).url
+2026-11-05 17:29:44.737   Creating the icon.
+2026-11-05 17:29:44.737   Successfully created the icon.
+2026-11-05 17:29:44.743   -- Registry entry --
+2026-11-05 17:29:44.743   Key: HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run
+2026-11-05 17:29:44.743   Value name: Tonefer
+2026-11-05 17:29:44.743   Creating or opening the key.
+2026-11-05 17:29:44.743   Creating or setting the value.
+2026-11-05 17:29:44.745   Successfully created or set the value.
+2026-11-05 17:29:44.745   Saving uninstall information.
+2026-11-05 17:29:44.745   Creating new uninstall key: HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Uninstall\{6B0F7C1E-3A52-4E7B-9C3D-2F1A9E5B7D41}_is1
+2026-11-05 17:29:44.745   Writing uninstall key values.
+2026-11-05 17:29:44.746   Detected previous non administrative install? No
+2026-11-05 17:29:44.746   Detected previous administrative 32-bit install? No
+2026-11-05 17:29:44.757   Installation process succeeded.
+2026-11-05 17:29:44.759   -- Run entry --
+2026-11-05 17:29:44.761   Run as: Current user
+2026-11-05 17:29:44.761   Type: Exec
+2026-11-05 17:29:44.761   Filename: C:\Windows\system32\netsh.exe
+2026-11-05 17:29:44.761   Parameters: advfirewall firewall delete rule name="Tonefer"
+2026-11-05 17:29:45.395   Process exit code: 1
+2026-11-05 17:29:45.395   -- Run entry --
+2026-11-05 17:29:45.395   Run as: Current user
+2026-11-05 17:29:45.395   Type: Exec
+2026-11-05 17:29:45.395   Filename: C:\Windows\system32\netsh.exe
+2026-11-05 17:29:45.395   Parameters: advfirewall firewall add rule name="Tonefer" dir=in action=allow program="C:\Program Files\Tonefer\Tonefer.exe" enable=yes profile=private,public
+2026-11-05 17:29:45.470   Process exit code: 0
+2026-11-05 17:29:45.472   Need to restart Windows? No
+2026-11-05 17:29:45.474   Deinitializing Setup.
+2026-11-05 17:29:45.480   Log closed.

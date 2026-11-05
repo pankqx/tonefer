@@ -1,0 +1,60 @@
+installed exe: C:\Program Files\Tonefer\Tonefer.exe
+server ok: True
+
+Rule Name:                            Tonefer
+----------------------------------------------------------------------
+Enabled:                              Yes
+Direction:                            In
+Profiles:                             Private,Public
+Grouping:                             
+LocalIP:                              Any
+RemoteIP:                             Any
+Protocol:                             Any
+Edge traversal:                       No
+Action:                               Allow
+Ok.
+
+
+Name      Id
+----      --
+msedge   812
+msedge  1032
+msedge  1440
+msedge  2232
+msedge  2452
+msedge  2752
+msedge  3900
+msedge  4640
+msedge  5244
+msedge  5836
+msedge  6396
+msedge  6768
+msedge  7120
+msedge  7672
+Tonefer 8320
+
+
+
+  TCP    0.0.0.0:8765           0.0.0.0:0              LISTENING       8320
+  TCP    127.0.0.1:8765         127.0.0.1:64956        ESTABLISHED     8320
+  TCP    127.0.0.1:8765         127.0.0.1:64993        ESTABLISHED     8320
+  TCP    127.0.0.1:50017        127.0.0.1:8765         TIME_WAIT       0
+  TCP    127.0.0.1:50944        127.0.0.1:8765         TIME_WAIT       0
+  TCP    127.0.0.1:52904        127.0.0.1:8765         TIME_WAIT       0
+  TCP    127.0.0.1:54669        127.0.0.1:8765         TIME_WAIT       0
+  TCP    127.0.0.1:57333        127.0.0.1:8765         TIME_WAIT       0
+  TCP    127.0.0.1:60855        127.0.0.1:8765         TIME_WAIT       0
+  TCP    127.0.0.1:62996        127.0.0.1:8765         TIME_WAIT       0
+  TCP    127.0.0.1:64224        127.0.0.1:8765         TIME_WAIT       0
+  TCP    127.0.0.1:64956        127.0.0.1:8765         ESTABLISHED     7672
+  TCP    127.0.0.1:64993        127.0.0.1:8765         ESTABLISHED     7672
+
+
+Name
+----
+_internal
+Tonefer.exe
+unins000.dat
+unins000.exe
+
+
