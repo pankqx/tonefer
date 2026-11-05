@@ -36,7 +36,7 @@ jobs:
             tonefer > app.log 2>&1 &
             APP=$!
             # A bare CI desktop has no portals, so D-Bus look-ups can stall start-up for a while.
-            # Wait for the real window (not just GTK's hidden leader window), up to 90 s.
+            # Wait for the real window (not just the hidden GTK leader window), up to 90 s.
             T0=$(date +%s)
             for i in $(seq 1 180); do xwininfo -root -tree | grep -q "(\"tonefer\" \"Tonefer\")" && break; sleep 0.5; done
             echo "window after $(( $(date +%s) - T0 )) s" > shots/diag.txt
