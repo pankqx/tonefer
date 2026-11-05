@@ -41,6 +41,19 @@ jobs:
             sleep 5; import -window root shots/ubuntu-app.png
             xwininfo -root -tree > shots/windows.txt
             kill $APP 2>/dev/null; wait $APP 2>/dev/null; true'
+          {
+            echo "userns restrict: $(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>&1)"
+            echo "bwrap: $(bwrap --ro-bind / / true 2>&1 && echo ok)"
+            dpkg -l | grep -E "webkit2gtk|apparmor " | awk '{print $2, $3}'
+            ls /etc/apparmor.d | grep -iE "bwrap|webkit|userns" || true
+          } > shots/diag.txt 2>&1
+          # Same launch with WebKit's sandbox off, to tell sandbox problems apart from others.
+          timeout 60 xvfb-run -a -s "-screen 0 1440x900x24" bash -c '
+            WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1 tonefer > app-nosandbox.log 2>&1 &
+            APP=$!
+            sleep 12; import -window root shots/ubuntu-app-nosandbox.png
+            kill $APP 2>/dev/null; wait $APP 2>/dev/null; true'
+          cp app-nosandbox.log shots/ 2>/dev/null || true
       - uses: actions/upload-artifact@v4
         with:
           name: deb
