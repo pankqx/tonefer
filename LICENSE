@@ -1,0 +1,13 @@
+Tonefer
+Developed and owned by K S Pankaj.
+
+Copyright (c) 2026 K S Pankaj. All rights reserved.
+
+This software and its source code are proprietary. No part of it may be copied,
+modified, distributed, sublicensed or sold without the prior written permission
+of the copyright holder.
+
+Third-party components bundled with Tonefer keep their own licenses:
+- tweetnacl-js: public domain (web/static/nacl-LICENSE.txt)
+- IBM Plex Mono: SIL Open Font License 1.1 (web/static/fonts)
+- aiohttp, PyNaCl, qrcode and other Python dependencies: their respective licenses

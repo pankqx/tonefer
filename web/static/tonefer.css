@@ -382,3 +382,12 @@ mark, .hl { background: var(--teal-soft); color: var(--ink); padding: 1px .4em; 
 
 /* Sharp corners everywhere; only the top menu bar keeps rounded pills. */
 .menubar .round, .menubar .help-btn { border-radius: 50%; }
+
+/* Ownership credit */
+.doc-foot {
+  margin-top: 4px;
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px;
+  font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+}
+.doc-foot b, .owner b { color: var(--ink); font-weight: 600; }
+.owner { margin: 4px 0 14px; text-align: center; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }

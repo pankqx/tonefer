@@ -4,9 +4,13 @@
 
 **Private, offline transfer between your phone and your laptop.**
 
+Developed and owned by **K S Pankaj**
+
 Notes, photos and files move instantly over a phone hotspot or USB cable, end-to-end encrypted. No cloud, accounts or internet needed.
 
 [User guide](GUIDE.md) · [Android app](https://github.com/pankqx/tonefer-android) · [Protocol](docs/PROTOCOL.md)
+
+<img src="docs/screenshots/loader.gif" alt="Tonefer start-up animation" width="620">
 
 <img src="docs/screenshots/laptop.png" alt="Tonefer on the laptop" width="820">
 
@@ -98,4 +102,4 @@ Configuration (environment variables): `TONEFER_PORT` (8765), `TONEFER_FILES` (`
 
 ---
 
-<sub>© 2026 Pank. Built with Python, aiohttp, PyNaCl and tweetnacl-js.</sub>
+<sub>Developed and owned by <b>K S Pankaj</b>. © 2026 K S Pankaj. All rights reserved. See [LICENSE](LICENSE). Built with Python, aiohttp, PyNaCl and tweetnacl-js.</sub>

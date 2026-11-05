@@ -632,7 +632,7 @@ def main() -> None:
     app = tonefer.build()
     desk_url = f"http://127.0.0.1:{PORT}/desk"
     addrs = netinfo.addresses()
-    print(f"\n  tonefer {VERSION}")
+    print(f"\n  tonefer {VERSION}  ·  developed & owned by K S Pankaj")
     print(f"  laptop view  {desk_url}")
     for d in addrs:
         print(f"  phone reach  http://{d['ip']}:{PORT}   ({d['iface']})")

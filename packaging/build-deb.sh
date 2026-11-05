@@ -65,7 +65,8 @@ DESK
 install -d "$PKG/usr/share/doc/tonefer"
 cp "$ROOT/README.md" "$ROOT/GUIDE.md" "$PKG/usr/share/doc/tonefer/"
 cat > "$PKG/usr/share/doc/tonefer/copyright" <<'C'
-Tonefer — Copyright (c) 2026 Pank.
+Tonefer — developed and owned by K S Pankaj.
+Copyright (c) 2026 K S Pankaj. All rights reserved.
 Bundled: tweetnacl-js (public domain), IBM Plex Mono (SIL Open Font License 1.1).
 C
 
@@ -79,7 +80,7 @@ Architecture: all
 Installed-Size: ${SIZE}
 Depends: python3 (>= 3.10), python3-aiohttp, python3-nacl, python3-qrcode, python3-psutil, python3-gi, gir1.2-gtk-3.0, gir1.2-webkit2-4.1 | gir1.2-webkit2-4.0
 Recommends: network-manager
-Maintainer: Pank <pankqx@gmail.com>
+Maintainer: K S Pankaj <pankqx@gmail.com>
 Homepage: https://github.com/pankqx/tonefer
 Description: Private, offline transfer between your phone and your laptop
  Send notes, photos and files between an Android phone and this computer over
