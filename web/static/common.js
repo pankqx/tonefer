@@ -149,22 +149,104 @@
     return el;
   }
 
-  // Loading screen: always shown for at least 5 seconds, stepping through what's happening.
+  // Loading screen: warp-speed streaks, packets racing phone → laptop, a racing percentage.
+  // Always shown for at least 5 seconds, then a fast "hyperjump" exit.
   const LOADER_MIN = 5000;
-  const loaderStart = Date.now();
+  const loaderStart = performance.now();
   const steps = (document.body.dataset.steps || "Loading interface|Checking network|Unlocking encryption keys|Connecting|Ready").split("|");
-  let stepTimer = null;
+  const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let stepTimer = null, loaderClosing = false, boost = 0, loaderFinished = false;
+
   (function cycle(i = 0) {
     const m = document.getElementById("loaderMsg");
-    if (!m || document.getElementById("loader")?.classList.contains("done")) return;
+    if (!m || loaderFinished) return;
     m.textContent = steps[Math.min(i, steps.length - 1)];
     if (i < steps.length - 1) stepTimer = setTimeout(() => cycle(i + 1), LOADER_MIN / steps.length);
   })();
+
+  // Percentage + bar: fast start, eases toward 100 over LOADER_MIN; waits at 99 until ready.
+  (function meter() {
+    const pct = document.getElementById("loaderPct"), bar = document.getElementById("loaderBar");
+    if (!pct || !bar) return;
+    const tick = (now) => {
+      if (loaderFinished) return;
+      const t = Math.min(1, (now - loaderStart) / LOADER_MIN);
+      const eased = 1 - Math.pow(1 - t, 2.2);
+      const v = loaderClosing && t >= 1 ? 100 : Math.min(99, Math.floor(eased * 100));
+      pct.textContent = v + "%";
+      bar.style.width = v + "%";
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  })();
+
+  // Warp streaks: thin lines rushing right-to-left, accelerating, with a few coloured ones.
+  (function warp() {
+    const c = document.getElementById("warp");
+    if (!c || reduceMotion) return;
+    const ctx = c.getContext("2d");
+    const css = getComputedStyle(document.documentElement);
+    const v = (n) => css.getPropertyValue(n).trim();
+    const palette = [v("--teal"), v("--coral"), v("--sun")];
+    const base = v("--muted");
+    let w = 0, h = 0;
+    const fit = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = c.clientWidth; h = c.clientHeight;
+      c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    const N = Math.round(Math.min(110, Math.max(45, (w * h) / 14000)));
+    const make = (anywhere) => ({
+      x: anywhere ? Math.random() * w : w + Math.random() * w * 0.4,
+      y: Math.random() * h,
+      len: 24 + Math.random() * 150,
+      vel: 0.5 + Math.random() * 1.5,
+      thick: Math.random() < 0.88 ? 1 : 2,
+      color: Math.random() < 0.14 ? palette[(Math.random() * palette.length) | 0] : base,
+      alpha: 0.12 + Math.random() * 0.38,
+    });
+    const lines = Array.from({ length: N }, () => make(true));
+    let speed = 0, last = performance.now();
+    const frame = (now) => {
+      if (loaderFinished) { window.removeEventListener("resize", fit); return; }
+      const dt = Math.min(48, now - last) / 16.7;
+      last = now;
+      const t = (now - loaderStart) / 1000;
+      const target = (t < 0.7 ? (t / 0.7) * 16 : 16 + Math.sin(t * 3) * 2) + boost;
+      speed += (target - speed) * 0.08;
+      ctx.clearRect(0, 0, w, h);
+      for (const l of lines) {
+        l.x -= l.vel * speed * dt;
+        const stretch = l.len * (0.4 + speed / 18);
+        if (l.x + stretch < 0) Object.assign(l, make(false));
+        const g = ctx.createLinearGradient(l.x, 0, l.x + stretch, 0);
+        g.addColorStop(0, l.color);
+        g.addColorStop(1, "transparent");
+        ctx.globalAlpha = Math.min(1, l.alpha * (0.6 + speed / 24));
+        ctx.fillStyle = g;
+        ctx.fillRect(l.x, l.y, stretch, l.thick);
+      }
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  })();
+
   function hideLoader() {
     const el = document.getElementById("loader");
-    if (!el || el.classList.contains("done") || el.dataset.closing) return;
-    el.dataset.closing = "1";
-    setTimeout(() => { el.classList.add("done"); clearTimeout(stepTimer); }, Math.max(0, LOADER_MIN - (Date.now() - loaderStart)));
+    if (!el || loaderClosing) return;
+    loaderClosing = true;
+    const wait = Math.max(0, LOADER_MIN - (performance.now() - loaderStart));
+    // Hyperjump: streaks surge for the last half second, then the screen wipes away.
+    setTimeout(() => { boost = 60; el.classList.add("jump"); }, Math.max(0, wait - 450));
+    setTimeout(() => {
+      el.classList.add("done");
+      clearTimeout(stepTimer);
+      setTimeout(() => { loaderFinished = true; }, 600);
+    }, wait);
   }
   function loaderText(text) {
     const m = document.getElementById("loaderMsg");
