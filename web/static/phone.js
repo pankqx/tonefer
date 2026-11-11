@@ -77,13 +77,99 @@
   let items = [];
   const urls = new Map(); // item id -> object URL (decrypted)
 
-  async function fetchFile(item) {
+  // ---------------- big transfers (protocol v2) ----------------
+  // Every chunk is sealed on its own with a header naming its transfer and position:
+  //   tid (16 ASCII) | index (uint32 BE) | flags (1 = last)
+  const HDR = 21;
+  function chunkHeader(tid, index, last) {
+    const h = new Uint8Array(HDR);
+    h.set(enc.encode(tid).subarray(0, 16));
+    new DataView(h.buffer).setUint32(16, index);
+    h[20] = last ? 1 : 0;
+    return h;
+  }
+
+  /** POST with the token; resolves to parsed JSON, rejects with {status, body}. */
+  function post(url, body, onProgress, method = "POST") {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open(method, url);
+      xhr.setRequestHeader("X-Tonefer-Token", token);
+      if (onProgress) xhr.upload.onprogress = (ev) => onProgress(ev.loaded);
+      xhr.onload = () => {
+        let data = null;
+        try { data = JSON.parse(xhr.responseText); } catch (_) {}
+        if (xhr.status < 300) resolve(data || {});
+        else reject({ status: xhr.status, body: data, text: xhr.responseText });
+      };
+      xhr.onerror = () => reject({ status: 0, text: "network error" });
+      xhr.send(body ?? null);
+    });
+  }
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const mbps = (bytes, ms) => (ms > 300 ? (bytes / (ms / 1000) / 1e6).toFixed(1) + " MB/s" : "");
+
+  /** A progress row with a cancel button. */
+  function progressRow(label) {
+    const row = document.createElement("div");
+    row.className = "up";
+    row.innerHTML = `<span class="label-text"></span><span class="rate"></span><button class="up-x" aria-label="Cancel">${ICONS.x}</button><div class="progress"><i></i></div>`;
+    $("uploads").appendChild(row);
+    const r = {
+      el: row, cancelled: false, onCancel: null,
+      label(t) { row.querySelector(".label-text").textContent = t; },
+      set(frac, rate) {
+        row.querySelector("i").style.width = Math.min(100, 100 * frac) + "%";
+        if (rate !== undefined) row.querySelector(".rate").textContent = rate;
+      },
+      done() { row.remove(); },
+    };
+    row.querySelector(".up-x").onclick = () => { r.cancelled = true; r.onCancel && r.onCancel(); };
+    r.label(label);
+    return r;
+  }
+
+  /** Downloads and decrypts a file of any size, frame by frame. */
+  async function download(item, onProgress) {
+    const r = await fetch(`/api/file/${item.id}?v=2`, { headers: { "X-Tonefer-Token": token } });
+    if (!r.ok) throw new Error(await r.text());
+    if (r.headers.get("X-Tonefer-Format") !== "2") return [open(new Uint8Array(await r.arrayBuffer()))];
+    const total = Number(r.headers.get("X-Tonefer-Size")) || item.size || 0;
+    const reader = r.body.getReader();
+    const parts = [];
+    let acc = new Uint8Array(2 * 1024 * 1024), len = 0, index = 0, got = 0, last = false;
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (len + value.length > acc.length) {
+        const bigger = new Uint8Array(Math.max(acc.length * 2, len + value.length));
+        bigger.set(acc.subarray(0, len)); acc = bigger;
+      }
+      acc.set(value, len); len += value.length;
+      let off = 0;
+      while (len - off >= 4) {
+        const n = new DataView(acc.buffer, acc.byteOffset + off, 4).getUint32(0);
+        if (len - off < 4 + n) break;
+        const plain = open(acc.slice(off + 4, off + 4 + n));
+        off += 4 + n;
+        const dv = new DataView(plain.buffer, plain.byteOffset);
+        if (dec.decode(plain.subarray(0, 16)) !== item.id || dv.getUint32(16) !== index) throw new Error("damaged transfer");
+        last = (plain[20] & 1) === 1;
+        parts.push(plain.subarray(HDR));
+        got += plain.length - HDR; index++;
+        if (onProgress) onProgress(got, total);
+      }
+      if (off) { acc.copyWithin(0, off, len); len -= off; }
+    }
+    if (!last) throw new Error("connection dropped");
+    return parts;
+  }
+
+  async function fetchFile(item, onProgress) {
     if (urls.has(item.id)) return urls.get(item.id);
     const p = (async () => {
-      const r = await fetch(`/api/file/${item.id}`, { headers: { "X-Tonefer-Token": token } });
-      if (!r.ok) throw new Error(await r.text());
-      const plain = open(new Uint8Array(await r.arrayBuffer()));
-      return URL.createObjectURL(new Blob([plain], { type: item.mime || "application/octet-stream" }));
+      const parts = await download(item, onProgress);
+      return URL.createObjectURL(new Blob(parts, { type: item.mime || "application/octet-stream" }));
     })();
     urls.set(item.id, p);
     p.catch(() => urls.delete(item.id));
@@ -106,14 +192,18 @@
       $("viewer").classList.add("open");
     },
     download: async (item) => {
-      toast("Unlocking…");
+      const big = item.size > 4 * 1024 * 1024 && !urls.has(item.id);
+      const row = big ? progressRow(`Receiving ${item.name}`) : null;
+      if (!big) toast("Unlocking…");
+      const t0 = performance.now();
       try {
-        const url = await fetchFile(item);
+        const url = await fetchFile(item, row && ((got, total) => row.set(got / (total || 1), mbps(got, performance.now() - t0))));
+        if (row) row.done();
         const a = document.createElement("a");
         a.href = url; a.download = item.name;
         document.body.appendChild(a); a.click(); a.remove();
         toast("Saved to Downloads");
-      } catch (e) { toast("Could not save: " + e.message); }
+      } catch (e) { if (row) row.done(); toast("Could not save: " + e.message); }
     },
   };
 
@@ -204,41 +294,100 @@
     ta.value = ""; autosize();
   });
 
-  $("attach").onclick = () => $("file").click();
+  // Attach menu: photos & files one by one, several files as one zip, or a whole folder as a zip.
+  const menu = $("attachMenu");
+  const closeMenu = () => { menu.hidden = true; };
+  $("attach").onclick = (e) => { e.stopPropagation(); menu.hidden = !menu.hidden; };
+  document.addEventListener("click", (e) => { if (!menu.contains(e.target)) closeMenu(); });
+  $("pickFiles").onclick = () => { closeMenu(); $("file").click(); };
+  $("pickZip").onclick = () => { closeMenu(); $("fileZip").click(); };
+  $("pickFolder").onclick = () => { closeMenu(); $("folder").click(); };
+
   $("file").onchange = async (e) => {
     const files = [...e.target.files];
     e.target.value = "";
-    for (const f of files) await upload(f);
+    for (const f of files) {
+      const row = progressRow(`Sending ${f.name}`);
+      try { await send([f], null, row); } catch (err) { if (!row.cancelled) toast("Failed: " + err.message); }
+      finally { row.done(); }
+    }
+  };
+  const asZip = async (files, name) => {
+    if (!files.length) return;
+    const row = progressRow(`Zipping ${name}`);
+    try { await send(files, name, row); toast(`Sent ${name}`); }
+    catch (err) { if (!row.cancelled) toast("Failed: " + err.message); }
+    finally { row.done(); }
+  };
+  $("fileZip").onchange = (e) => {
+    const files = [...e.target.files];
+    e.target.value = "";
+    const d = new Date();
+    const name = `Tonefer ${d.toISOString().slice(0, 10)} ${String(d.getHours()).padStart(2, "0")}.${String(d.getMinutes()).padStart(2, "0")}.zip`;
+    asZip(files.map((f) => ({ file: f, path: f.name })), name);
+  };
+  $("folder").onchange = (e) => {
+    const files = [...e.target.files];
+    e.target.value = "";
+    if (!files.length) return;
+    const top = (files[0].webkitRelativePath || "").split("/")[0] || "Folder";
+    asZip(files.map((f) => ({ file: f, path: f.webkitRelativePath || `${top}/${f.name}` })), top + ".zip");
   };
 
-  async function upload(file) {
-    const row = document.createElement("div");
-    row.className = "up";
-    row.innerHTML = `<span class="label-text">Encrypting ${T.esc(file.name)}</span><span class="rate"></span><div class="progress"><i></i></div>`;
-    $("uploads").appendChild(row);
-    try {
-      const plain = new Uint8Array(await file.arrayBuffer());
-      const body = seal(plain);
-      row.firstChild.textContent = `Sending ${file.name}`;
-      const t0 = performance.now();
-      await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", "/api/upload");
-        xhr.setRequestHeader("X-Tonefer-Token", token);
-        xhr.setRequestHeader("X-Tonefer-Meta", sealJson({ name: file.name, mime: file.type }));
-        xhr.upload.onprogress = (ev) => {
-          if (ev.lengthComputable) row.querySelector("i").style.width = (100 * ev.loaded / ev.total) + "%";
-          const secs = (performance.now() - t0) / 1000;
-          if (secs > 0.3) row.querySelector(".rate").textContent = (ev.loaded / secs / 1e6).toFixed(1) + " MB/s";
-        };
-        xhr.onload = () => (xhr.status < 300 ? resolve() : reject(new Error(xhr.responseText || xhr.status)));
-        xhr.onerror = () => reject(new Error("network error"));
-        xhr.send(new Blob([body]));
-      });
-    } catch (err) {
-      toast("Failed: " + err.message);
-    } finally {
-      row.remove();
+  /**
+   * Sends files to the laptop in sealed 4 MB chunks: any size, constant memory, and a dropped
+   * chunk is simply sent again. With zipName, the laptop writes every file into one zip.
+   */
+  async function send(files, zipName, row) {
+    if (!ws || ws.readyState !== 1) throw new Error("laptop not connected");
+    const list = files.map((x) => (x instanceof File ? { file: x, path: x.name } : x));
+    const total = list.reduce((n, x) => n + x.file.size, 0) || 1;
+    const t0 = performance.now();
+    let sent = 0, zip = null, current = null;
+    row.onCancel = () => {
+      if (zip) post(`/api/zip/${zip}`, null, null, "DELETE").catch(() => {});
+      else if (current) post(`/api/upload/${current}`, null, null, "DELETE").catch(() => {});
+    };
+    const show = (extra = 0) => row.set((sent + extra) / total, mbps(sent + extra, performance.now() - t0));
+    if (zipName) {
+      zip = (await post("/api/zip/start", sealJson({ name: zipName, files: list.length, size: total }))).zip;
+      row.label(`Sending ${zipName} · ${list.length} file${list.length === 1 ? "" : "s"}`);
+    }
+    for (const [n, { file, path }] of list.entries()) {
+      if (row.cancelled) throw new Error("cancelled");
+      if (zipName) row.label(`Sending ${zipName} · ${n + 1} of ${list.length}`);
+      const meta = { name: file.name, mime: file.type, size: file.size, mtime: file.lastModified };
+      if (zip) Object.assign(meta, { zip, path });
+      const start = await post("/api/upload/start", sealJson(meta));
+      const tid = start.id, size = start.chunk || 4 * 1024 * 1024;
+      current = tid;
+      const count = Math.max(1, Math.ceil(file.size / size));
+      const prep = async (i) => {
+        const data = new Uint8Array(await file.slice(i * size, Math.min(file.size, (i + 1) * size)).arrayBuffer());
+        return { i, bytes: data.length, body: seal(concat(chunkHeader(tid, i, i === count - 1), data)) };
+      };
+      let i = 0, next = prep(0), tries = 0;
+      while (i < count) {
+        const c = await next;
+        if (c.i !== i) { next = prep(i); continue; }
+        if (i + 1 < count) next = prep(i + 1); // encrypt the next chunk while this one travels
+        try {
+          const r = await post(`/api/upload/${tid}/${i}`, c.body, (loaded) => show(Math.min(loaded, c.bytes)));
+          sent += c.bytes; i = r.next; tries = 0;
+          show();
+        } catch (e) {
+          if (row.cancelled) throw new Error("cancelled");
+          if (e.status === 409 && e.body && typeof e.body.next === "number") { i = e.body.next; next = prep(i); continue; }
+          if (e.status === 403) throw new Error("Pairing changed. Scan the code on your laptop again.");
+          if (e.status === 404 || ++tries > 8) throw new Error(e.text || "connection lost");
+          await sleep(Math.min(1000 * 2 ** (tries - 1), 10000)); // hotspot hiccup: wait, then send the chunk again
+          next = prep(i);
+        }
+      }
+    }
+    if (zip) {
+      row.label(`Finishing ${zipName}`);
+      await post(`/api/zip/${zip}/finish`, sealJson({ zip }));
     }
   }
 

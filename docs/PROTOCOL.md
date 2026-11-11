@@ -1,4 +1,4 @@
-# tonefer protocol (v1)
+# tonefer protocol (v1 + v2 big transfers)
 
 This is what any phone client — the web view today, the native Android app later — must speak.
 
@@ -18,7 +18,15 @@ The token goes in the `X-Tonefer-Token` header, or `?t=` for WebSocket.
 | GET | `/api/ping` | `200` if paired, `401` if not (re-pair) |
 | WS | `/ws?t=<token>` | every frame is `sealJson(event)` in both directions |
 | POST | `/api/upload` | header `X-Tonefer-Meta: sealJson({name, mime})`, body `seal(file bytes)` |
-| GET | `/api/file/<id>` | returns `seal(file bytes)` |
+| GET | `/api/file/<id>` | returns `seal(file bytes)` (v1, files up to 512 MB) |
+| GET | `/api/file/<id>?v=2[&from=<frame>]` | v2 framed download, any size (below) |
+| POST | `/api/upload/start` | body `sealJson({name, mime, size, mtime?, zip?, path?})` → `{id, chunk, next}` |
+| POST | `/api/upload/<id>/<index>` | body = one sealed chunk → `{ok, next, done, item?}`; `409 {next}` if out of order |
+| GET | `/api/upload/<id>` | `{next, done, bytes}`, to resume after a dropped connection |
+| DELETE | `/api/upload/<id>` | cancel |
+| POST | `/api/zip/start` | body `sealJson({name, files?, size?})` → `{zip, name}` |
+| POST | `/api/zip/<zip>/finish` | body `sealJson({zip})` → `{ok, item}` (safe to repeat) |
+| DELETE | `/api/zip/<zip>` | cancel the whole archive |
 
 ## WebSocket events
 
@@ -40,5 +48,42 @@ A frame that fails to decrypt closes the socket with code `4001`. Unpairing also
 ```json
 { "id": "16 hex", "kind": "text" | "file", "origin": "phone" | "laptop", "ts": 1729320000000,
   "text": "...",                                  // text only
-  "name": "IMG_2041.jpg", "size": 48213, "mime": "image/jpeg" }   // file only
+  "name": "IMG_2041.jpg", "size": 48213, "mime": "image/jpeg",    // file only
+  "files": 12 }                                   // zips built by Tonefer: how many files inside
 ```
+
+## v2: big transfers and folders as zip
+
+Any size, constant memory on both sides, and every piece is still end-to-end encrypted.
+
+**Chunk.** A file moves in pieces. Each piece is sealed on its own:
+
+```
+seal( header || data )
+header = tid (16 ASCII bytes) | index (uint32, big-endian) | flags (uint8: 1 = last chunk)
+```
+
+`tid` is the upload id (or the item id for downloads). The header stops chunks being swapped,
+replayed into another transfer or cut short: the receiver checks the id, the position and that
+the last chunk arrived.
+
+**Upload (phone → laptop).** `upload/start`, then one `POST /api/upload/<id>/<index>` per chunk
+of up to `chunk` bytes (4 MB), in order. Clients read one chunk ahead so they know which chunk is
+the last. A retry of a chunk that already arrived is answered `200`; a gap is answered `409` with
+the index the laptop expects. The file is published when the last chunk lands.
+
+**Folder or several files as one zip.** `zip/start` first, then upload each file with
+`zip` and `path` (for example `Holiday/day 2/IMG_1.jpg`) in its start metadata, one file at a time.
+The laptop writes them straight into one ZIP64 archive (photos and videos stored, other files
+deflated), and publishes it on `zip/<zip>/finish` as a file item with `files` = the count.
+Paths are cleaned: no `..`, no absolute paths, no drive letters.
+
+**Download (laptop → phone).** `GET /api/file/<id>?v=2` answers with header `X-Tonefer-Format: 2`,
+`X-Tonefer-Size` (plain bytes) and a body of frames:
+
+```
+frame = length (uint32, big-endian) || seal( header || up to 1 MB of data )
+```
+
+`&from=<n>` resumes at frame `n`. A server without v2 ignores `?v=2` and returns the v1 body,
+so clients check `X-Tonefer-Format`.

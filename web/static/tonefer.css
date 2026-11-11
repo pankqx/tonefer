@@ -233,6 +233,26 @@ mark, .hl { background: var(--teal-soft); color: var(--ink); padding: 1px .4em; 
 
 .up { font-size: 12.5px; color: var(--muted); margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 0 10px; }
 .up .rate { margin-left: auto; color: var(--teal); font-weight: 500; }
+.up .label-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%; }
+.up-x { width: 20px; height: 20px; padding: 0; border: 0; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
+.up-x:hover { color: var(--coral); }
+.up-x svg { width: 14px; height: 14px; }
+
+/* attach menu: one-by-one, several as one zip, a folder as zip */
+.attach-wrap { position: relative; flex: none; }
+.attach-menu {
+  position: absolute; left: 0; bottom: calc(100% + 10px); z-index: 30; min-width: 264px;
+  background: var(--panel); border: 1px solid var(--line-strong); box-shadow: 4px 4px 0 var(--line);
+  display: flex; flex-direction: column; padding: 4px;
+}
+.attach-menu[hidden] { display: none; }
+.attach-menu button {
+  display: flex; align-items: center; gap: 10px; text-align: left; border: 0; background: none;
+  padding: 11px 12px; font: inherit; font-size: 14px; color: var(--ink); cursor: pointer;
+}
+.attach-menu button:hover, .attach-menu button:focus-visible { background: var(--sunk); outline: 0; }
+.attach-menu button svg { width: 17px; height: 17px; color: var(--teal); flex: none; }
+.attach-menu small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 1px; }
 .progress { flex-basis: 100%; height: 6px; background: var(--sunk); border-radius: 0; overflow: hidden; margin-top: 6px; }
 .progress i { display: block; height: 100%; width: 0; background: var(--teal); border-radius: 0; transition: width .15s; }
 

@@ -115,8 +115,17 @@
   <div class="scroll" id="scroll"><div class="timeline" id="timeline"></div></div>
   <div class="uploads" id="uploads"></div>
   <form class="composer" id="composer">
-    <button type="button" class="round" id="attach" aria-label="Send photos or files"></button>
+    <div class="attach-wrap">
+      <button type="button" class="round" id="attach" aria-label="Send photos, files or a folder" aria-haspopup="menu"></button>
+      <div class="attach-menu" id="attachMenu" role="menu" hidden>
+        <button type="button" role="menuitem" id="pickFiles"><span class="ico" data-icon="file"></span><span>Photos &amp; files<small>Each one on its own</small></span></button>
+        <button type="button" role="menuitem" id="pickZip"><span class="ico" data-icon="zip"></span><span>Files as one zip<small>Several files, one download</small></span></button>
+        <button type="button" role="menuitem" id="pickFolder"><span class="ico" data-icon="folder"></span><span>Folder as zip<small>A whole folder, any size</small></span></button>
+      </div>
+    </div>
     <input type="file" id="file" multiple hidden>
+    <input type="file" id="fileZip" multiple hidden>
+    <input type="file" id="folder" webkitdirectory multiple hidden>
     <textarea id="text" rows="1" placeholder="Note to laptop…"></textarea>
     <button class="round send" id="sendBtn" aria-label="Send" disabled></button>
   </form>

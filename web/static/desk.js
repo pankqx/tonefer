@@ -43,6 +43,13 @@
       a.click();
     },
     remove: async (item) => { await fetch(`/desk/api/delete/${item.id}`, { method: "POST" }); },
+    extract: async (item) => {
+      toast("Unzipping…");
+      const r = await fetch(`/desk/api/extract/${item.id}`, { method: "POST" });
+      if (!r.ok) return toast(await r.text());
+      const d = await r.json();
+      toast(`Unzipped to ${d.name}`);
+    },
   };
 
   function draw(scroll = true) {
@@ -150,6 +157,9 @@
         }
       } else if (m.type === "rate") {
         onRate(m);
+        incoming(m);
+      } else if (m.type === "zipping") {
+        zipping(m);
       } else if (m.type === "notice") {
         toast(m.text);
         loadPair(true);
@@ -168,6 +178,30 @@
     };
   }
   connect();
+
+  // Live rows for zips being built on the laptop and big files arriving from the phone.
+  const rows = {};
+  function zipping(m) {
+    let r = rows[m.id];
+    if (!r) r = rows[m.id] = progressRow(`Zipping ${m.name}`);
+    if (m.finished) {
+      r.done(); delete rows[m.id];
+      if (m.error) toast(`Couldn't zip: ${m.error}`);
+      return;
+    }
+    if (m.total) {
+      r.set(m.done / m.total, `${m.files} files`);
+      r.label(`Zipping ${m.name} · ${T.size(m.done)} of ${T.size(m.total)}`);
+    }
+  }
+  function incoming(m) {
+    if (m.dir !== "in" || m.label === "Speed test" || !m.total || m.total < 4 * 1024 * 1024) return;
+    const id = "in" + m.id;
+    let r = rows[id];
+    if (m.done) { if (r) { r.done(); delete rows[id]; } return; }
+    if (!r) r = rows[id] = progressRow(`Receiving ${m.label}`);
+    r.set(m.bytes / m.total, (m.bps / 1e6).toFixed(1) + " MB/s");
+  }
 
   let unseen = 0;
   function ping() {
@@ -201,36 +235,118 @@
     if (!r.ok) { ta.value = text; autosize(); toast("Couldn't send"); }
   }
 
-  // ---- sending files ----
-  $("attach").onclick = () => $("file").click();
+  // ---- sending files and folders ----
+  const menu = $("attachMenu");
+  const closeMenu = () => { menu.hidden = true; };
+  $("attach").onclick = (e) => { e.stopPropagation(); menu.hidden = !menu.hidden; };
+  document.addEventListener("click", (e) => { if (!menu.contains(e.target)) closeMenu(); });
+  $("pickFiles").onclick = () => { closeMenu(); $("file").click(); };
+  $("pickZip").onclick = () => { closeMenu(); $("fileZip").click(); };
+  $("pickFolder").onclick = () => { closeMenu(); sendFolder(); };
   $("file").onchange = (e) => { sendFiles([...e.target.files]); e.target.value = ""; };
-
-  function sendFiles(files) {
+  $("fileZip").onchange = (e) => {
+    const files = [...e.target.files];
+    e.target.value = "";
+    const d = new Date();
+    const name = `Tonefer ${d.toISOString().slice(0, 10)} ${String(d.getHours()).padStart(2, "0")}.${String(d.getMinutes()).padStart(2, "0")}`;
+    sendFiles(files.map((f) => ({ file: f, path: f.name })), name);
+  };
+  $("folderInput").onchange = (e) => {
+    const files = [...e.target.files];
+    e.target.value = "";
     if (!files.length) return;
+    const top = (files[0].webkitRelativePath || "").split("/")[0] || "Folder";
+    sendFiles(files.map((f) => ({ file: f, path: f.webkitRelativePath || `${top}/${f.name}` })), top);
+  };
+
+  // The laptop zips the folder straight from disk (fast, no copying through the page).
+  // Without a system folder picker, fall back to the browser's own.
+  async function sendFolder() {
+    const r = await fetch("/desk/api/send-folder", { method: "POST" });
+    if (r.status === 501) return $("folderInput").click();
+    if (!r.ok) return toast(await r.text());
+  }
+
+  const mbps = (bytes, ms) => (ms > 300 ? (bytes / (ms / 1000) / 1e6).toFixed(1) + " MB/s" : "");
+  function progressRow(label, onCancel) {
     const row = document.createElement("div");
     row.className = "up";
-    const label = files.length === 1 ? files[0].name : `${files.length} files`;
-    row.innerHTML = `Sending ${T.esc(label)}…<div class="progress"><i></i></div>`;
+    row.innerHTML = `<span class="label-text"></span><span class="rate"></span>${onCancel ? `<button class="up-x" title="Cancel">${ICONS.x}</button>` : ""}<div class="progress"><i></i></div>`;
+    row.querySelector(".label-text").textContent = label;
+    if (onCancel) row.querySelector(".up-x").onclick = onCancel;
     $("uploads").appendChild(row);
-    const fd = new FormData();
-    files.forEach((f) => fd.append("file", f, f.name || "pasted.png"));
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/desk/api/upload");
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) row.querySelector("i").style.width = (100 * e.loaded / e.total) + "%";
+    return {
+      el: row,
+      label: (t) => { row.querySelector(".label-text").textContent = t; },
+      set: (frac, rate) => {
+        row.querySelector("i").style.width = Math.min(100, 100 * frac) + "%";
+        if (rate !== undefined) row.querySelector(".rate").textContent = rate;
+      },
+      done: () => row.remove(),
     };
-    xhr.onload = () => { row.remove(); if (xhr.status >= 300) toast("Upload failed: " + xhr.responseText); };
-    xhr.onerror = () => { row.remove(); toast("Upload failed"); };
+  }
+
+  /** Files go to the laptop's own disk, streamed: any size. With zipName they become one zip. */
+  function sendFiles(list, zipName) {
+    list = list.map((x) => (x instanceof File ? { file: x, path: x.name } : x));
+    if (!list.length) return;
+    const label = zipName ? `Zipping ${zipName}.zip · ${list.length} files`
+      : list.length === 1 ? `Sending ${list[0].file.name || "pasted image"}` : `Sending ${list.length} files`;
+    const xhr = new XMLHttpRequest();
+    const row = progressRow(label, () => xhr.abort());
+    const fd = new FormData();
+    for (const { file, path } of list) {
+      if (zipName) {
+        fd.append("path", path);
+        fd.append("size", String(file.size));
+        fd.append("mtime", String(file.lastModified || 0));
+      }
+      fd.append("file", file, file.name || "pasted.png");
+    }
+    const t0 = performance.now();
+    xhr.open("POST", "/desk/api/upload" + (zipName ? "?zip=" + encodeURIComponent(zipName) : ""));
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) row.set(e.loaded / e.total, mbps(e.loaded, performance.now() - t0));
+      if (zipName && e.loaded === e.total) row.label(`Finishing ${zipName}.zip`);
+    };
+    xhr.onload = () => { row.done(); if (xhr.status >= 300) toast("Couldn't send: " + xhr.responseText); };
+    xhr.onerror = () => { row.done(); toast("Couldn't send"); };
+    xhr.onabort = () => { row.done(); toast("Cancelled"); };
     xhr.send(fd);
+  }
+
+  // Dropped folders are walked in the page and sent as one zip each; loose files go one by one.
+  async function walk(entry, prefix, out) {
+    if (entry.isFile) {
+      const file = await new Promise((res, rej) => entry.file(res, rej));
+      out.push({ file, path: prefix + file.name });
+    } else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      for (;;) {
+        const batch = await new Promise((res, rej) => reader.readEntries(res, rej));
+        if (!batch.length) break;
+        for (const e of batch) await walk(e, prefix + entry.name + "/", out);
+      }
+    }
   }
 
   let depth = 0;
   window.addEventListener("dragenter", (e) => { if (e.dataTransfer.types.includes("Files")) { depth++; $("drop").classList.add("on"); } });
   window.addEventListener("dragleave", () => { if (--depth <= 0) { depth = 0; $("drop").classList.remove("on"); } });
   window.addEventListener("dragover", (e) => e.preventDefault());
-  window.addEventListener("drop", (e) => {
+  window.addEventListener("drop", async (e) => {
     e.preventDefault(); depth = 0; $("drop").classList.remove("on");
-    sendFiles([...e.dataTransfer.files]);
+    const entries = [...(e.dataTransfer.items || [])].map((it) => it.webkitGetAsEntry && it.webkitGetAsEntry()).filter(Boolean);
+    const folders = entries.filter((x) => x.isDirectory);
+    if (!folders.length) return sendFiles([...e.dataTransfer.files]);
+    const loose = [];
+    for (const f of entries.filter((x) => x.isFile)) { try { await walk(f, "", loose); } catch (_) {} }
+    if (loose.length) sendFiles(loose);
+    for (const dir of folders) {
+      const files = [];
+      try { await walk(dir, "", files); } catch (err) { toast(`Couldn't read ${dir.name}`); continue; }
+      if (files.length) sendFiles(files, dir.name); else toast(`${dir.name} is empty`);
+    }
   });
   window.addEventListener("paste", (e) => {
     const files = [...(e.clipboardData?.files || [])];

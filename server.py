@@ -20,6 +20,7 @@ import mimetypes
 import os
 import platform
 import shutil
+import struct
 import subprocess
 import sys
 import time
@@ -34,6 +35,7 @@ import nacl.utils
 import netinfo
 import qrcode
 import qrcode.image.svg
+import transfer as tx
 from aiohttp import WSMsgType, web
 
 def _read_version() -> str:
@@ -48,7 +50,8 @@ APP_DIR = Path(os.environ.get("TONEFER_HOME", Path.home() / ".tonefer"))
 FILES_DIR = Path(os.environ.get("TONEFER_FILES", Path.home() / "Tonefer"))
 PORT = int(os.environ.get("TONEFER_PORT", "8765"))
 WEB = Path(__file__).resolve().parent / "web"
-MAX_FILE = 512 * 1024 * 1024  # 512 MB per transfer
+MAX_FILE = 512 * 1024 * 1024  # cap for the old single-request upload; chunked transfers have none
+PARTIAL = APP_DIR / "partial"
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "[::1]", "::1"}
 
 
@@ -252,6 +255,10 @@ class Tonefer:
         self._net_cache: dict = {}
         self.config = Config(APP_DIR / "config.json")
         self.hotspot_status = ""
+        self.uploads: dict[str, tx.Incoming] = {}
+        self.zips: dict[str, tx.ZipBuild] = {}
+        shutil.rmtree(PARTIAL, ignore_errors=True)  # leftovers from a crash
+        PARTIAL.mkdir(parents=True, exist_ok=True)
 
     # ---- broadcasting --------------------------------------------------- #
     async def broadcast(self, event: dict) -> None:
@@ -305,6 +312,13 @@ class Tonefer:
             host = (request.host or "").rsplit(":", 1)[0]
             if request.remote not in ("127.0.0.1", "::1") or host not in LOCAL_HOSTS:
                 raise web.HTTPForbidden(text="The laptop view is only available on this computer.")
+            # Web pages from other sites can still aim requests at 127.0.0.1; browsers label
+            # those with their Origin, so anything not from the laptop view itself is refused.
+            origin = request.headers.get("Origin")
+            if origin and origin != "null":
+                from urllib.parse import urlsplit
+                if (urlsplit(origin).hostname or "") not in LOCAL_HOSTS | {"::1"}:
+                    raise web.HTTPForbidden(text="Requests from other websites aren't allowed.")
         elif request.path.startswith("/api") or request.path == "/ws":
             token = request.headers.get("X-Tonefer-Token") or request.query.get("t", "")
             if not secrets_equal(token, self.vault.token):
@@ -380,6 +394,11 @@ class Tonefer:
         path = FILES_DIR / item["path"]
         if not path.exists():
             raise web.HTTPGone(text="File was moved or deleted on the laptop.")
+        if request.query.get("v") == "2":
+            return await self.stream_file(request, item, path)
+        if path.stat().st_size > MAX_FILE:
+            raise web.HTTPRequestEntityTooLarge(MAX_FILE, path.stat().st_size,
+                                                text="Update Tonefer on your phone to receive files this big.")
         data = await asyncio.to_thread(path.read_bytes)
         sealed = await asyncio.to_thread(self.vault.seal, data)
         return await self.stream_out(request, sealed, item["name"])
@@ -414,6 +433,210 @@ class Tonefer:
         bps = await meter.finish()
         return web.json_response({"ok": True, "bps": bps})
 
+    # ---- big transfers (protocol v2) ------------------------------------ #
+    def _meta(self, raw: str) -> dict:
+        try:
+            meta = self.vault.open_json(raw.strip())
+        except (nacl.exceptions.CryptoError, ValueError, TypeError):
+            raise web.HTTPForbidden(text="Payload did not decrypt. Re-pair your phone.")
+        if not isinstance(meta, dict):
+            raise web.HTTPBadRequest(text="Bad request")
+        return meta
+
+    @staticmethod
+    def _int(v, default: int = -1) -> int:
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return default
+
+    async def stream_file(self, request, item: dict, path: Path):
+        """Laptop → phone, any size: length-prefixed frames, each sealed on its own."""
+        size = path.stat().st_size
+        frames = max(1, -(-size // tx.DCHUNK))
+        start = min(max(self._int(request.query.get("from"), 0), 0), frames)
+        resp = web.StreamResponse(headers={
+            "Content-Type": "application/octet-stream", "Cache-Control": "no-store",
+            "X-Tonefer-Format": "2", "X-Tonefer-Size": str(size), "X-Tonefer-Frames": str(frames),
+            "X-Tonefer-Chunk": str(tx.DCHUNK)})
+        resp.content_length = tx.frames_size(size, start)
+        await resp.prepare(request)
+        meter = Meter(self, "out", max(size - start * tx.DCHUNK, 0), item["name"])
+        tid = item["id"]
+
+        def frame(fh, i: int) -> bytes:
+            sealed = self.vault.seal(tx.header(tid, i, i == frames - 1) + fh.read(tx.DCHUNK))
+            return struct.pack(">I", len(sealed)) + sealed
+
+        with open(path, "rb") as fh:
+            fh.seek(start * tx.DCHUNK)
+            for i in range(start, frames):
+                out = await asyncio.to_thread(frame, fh, i)
+                await resp.write(out)
+                await meter.add(len(out) - tx.FRAME_OVERHEAD)
+        await resp.write_eof()
+        await meter.finish()
+        return resp
+
+    async def phone_zip_start(self, request):
+        meta = self._meta(await request.text())
+        zid = tx.new_id()
+        z = await asyncio.to_thread(tx.ZipBuild, zid, str(meta.get("name") or "Tonefer"), "phone", PARTIAL,
+                                    self._int(meta.get("files"), 0), self._int(meta.get("size")))
+        z.meter = Meter(self, "in", max(z.expected_size, 0), z.name)
+        self.zips[zid] = z
+        return web.json_response({"zip": zid, "name": z.name})
+
+    async def phone_upload_start(self, request):
+        meta = self._meta(await request.text())
+        name = safe_name(str(meta.get("name") or "file"))
+        size = self._int(meta.get("size"))
+        mime = str(meta.get("mime") or "") or mimetypes.guess_type(name)[0] or "application/octet-stream"
+        tid = tx.new_id()
+        zid = meta.get("zip")
+        if zid:
+            z = self.zips.get(str(zid))
+            if z is None or z.zf is None:
+                raise web.HTTPNotFound(text="That zip is no longer open. Send the folder again.")
+            async with z.lock:
+                busy = self.uploads.get(z.owner or "")
+                if busy is not None and not busy.done:
+                    return web.json_response({"ok": False, "busy": busy.id, "next": busy.next}, status=409)
+                mtime = self._int(meta.get("mtime"), 0) / 1000 or None
+                await asyncio.to_thread(z.open_entry, str(meta.get("path") or name), size, mtime)
+                z.owner = tid
+                z.last_seen = time.monotonic()
+            inc = tx.Incoming(tid, name, mime, size, "phone", zipb=z)
+            inc.meter = z.meter
+        else:
+            tmp = PARTIAL / f"{tid}.part"
+            inc = tx.Incoming(tid, name, mime, size, "phone", tmp=tmp)
+            inc.fh = await asyncio.to_thread(open, tmp, "wb")
+            inc.meter = Meter(self, "in", max(size, 0), name)
+        self.uploads[tid] = inc
+        return web.json_response({"id": tid, "chunk": tx.CHUNK, "next": 0})
+
+    async def phone_upload_state(self, request):
+        inc = self.uploads.get(request.match_info["tid"])
+        if inc is None:
+            raise web.HTTPNotFound(text="Unknown transfer")
+        return web.json_response({"next": inc.next, "done": inc.done, "bytes": inc.bytes})
+
+    async def phone_upload_chunk(self, request):
+        tid = request.match_info["tid"]
+        inc = self.uploads.get(tid)
+        if inc is None:
+            raise web.HTTPNotFound(text="Unknown transfer. Send the file again.")
+        index = self._int(request.match_info["index"])
+        limit = tx.CHUNK + 4096
+        if (request.content_length or 0) > limit:
+            raise web.HTTPRequestEntityTooLarge(limit, request.content_length)
+        buf = bytearray()
+        async for part in request.content.iter_chunked(256 * 1024):
+            buf += part
+            if len(buf) > limit:
+                raise web.HTTPRequestEntityTooLarge(limit, len(buf))
+            await inc.meter.add(len(part))  # live speed while the chunk is still arriving
+        async with inc.lock:
+            now = time.monotonic()
+            inc.last_seen = now
+            if inc.zip is not None:
+                inc.zip.last_seen = now
+            if index < inc.next:  # a retry of something we already have
+                return web.json_response({"ok": True, "next": inc.next, "done": inc.done})
+            if index > inc.next or inc.done:
+                return web.json_response({"ok": False, "next": inc.next, "done": inc.done}, status=409)
+            try:
+                plain = await asyncio.to_thread(self.vault.open, bytes(buf))
+            except (nacl.exceptions.CryptoError, ValueError):
+                raise web.HTTPForbidden(text="Payload did not decrypt. Re-pair your phone.")
+            ctid, cindex, last, data = tx.parse(plain)
+            if ctid != tid or cindex != index:
+                raise web.HTTPBadRequest(text="That chunk belongs to another transfer.")
+            await asyncio.to_thread(inc.write, data)
+            inc.next += 1
+            result = {"ok": True, "next": inc.next, "done": False}
+            if last:
+                await asyncio.to_thread(inc.close)
+                inc.done = True
+                result["done"] = True
+                if inc.zip is None:
+                    await inc.meter.finish()
+                    item = await asyncio.to_thread(self.finish_file, inc, "Received")
+                    await self.publish(item)
+                    result["item"] = item["id"]
+            return web.json_response(result)
+
+    def finish_file(self, inc: tx.Incoming, folder: str) -> dict:
+        dest = unique_path(FILES_DIR / folder, safe_name(inc.name))
+        shutil.move(str(inc.tmp), dest)
+        return new_item("file", inc.origin, name=dest.name, size=dest.stat().st_size, mime=inc.mime,
+                        path=str(dest.relative_to(FILES_DIR)))
+
+    async def finish_zip(self, z: tx.ZipBuild, folder: str) -> dict:
+        tmp = await asyncio.to_thread(z.finish)
+        z.zf = None
+        dest = unique_path(FILES_DIR / folder, z.name)
+        await asyncio.to_thread(shutil.move, str(tmp), dest)
+        if z.meter is not None:
+            await z.meter.finish()
+        item = new_item("file", z.origin, name=dest.name, size=dest.stat().st_size, mime="application/zip",
+                        path=str(dest.relative_to(FILES_DIR)), files=z.count)
+        z.item = item["id"]
+        await self.publish(item)
+        return item
+
+    async def phone_zip_finish(self, request):
+        self._meta(await request.text())  # proves the sender has the key
+        z = self.zips.get(request.match_info["zid"])
+        if z is None:
+            raise web.HTTPNotFound(text="That zip is no longer open. Send the folder again.")
+        async with z.lock:
+            if getattr(z, "item", None):  # already finished (a retry)
+                return web.json_response({"ok": True, "item": z.item})
+            busy = self.uploads.get(z.owner or "")
+            if busy is not None and not busy.done:
+                return web.json_response({"ok": False, "busy": busy.id, "next": busy.next}, status=409)
+            item = await self.finish_zip(z, "Received")
+        for tid in [t for t, inc in self.uploads.items() if inc.zip is z]:
+            self.uploads.pop(tid, None)
+        return web.json_response({"ok": True, "item": item["id"]})
+
+    async def phone_upload_cancel(self, request):
+        inc = self.uploads.pop(request.match_info["tid"], None)
+        if inc is not None and inc.zip is None and not inc.done:
+            await asyncio.to_thread(inc.abort)
+            await inc.meter.finish()
+        return web.json_response({"ok": True})
+
+    async def phone_zip_cancel(self, request):
+        z = self.zips.pop(request.match_info["zid"], None)
+        if z is not None and z.zf is not None:
+            for tid in [t for t, inc in self.uploads.items() if inc.zip is z]:
+                self.uploads.pop(tid, None)
+            await asyncio.to_thread(z.abort)
+            if z.meter is not None:
+                await z.meter.finish()
+        return web.json_response({"ok": True})
+
+    async def janitor(self) -> None:
+        """Drops transfers the phone walked away from, so half files don't pile up."""
+        while True:
+            await asyncio.sleep(60)
+            now = time.monotonic()
+            for tid, inc in list(self.uploads.items()):
+                age = now - inc.last_seen
+                if (inc.done and age > 600) or age > tx.STALE_SECONDS:
+                    self.uploads.pop(tid, None)
+                    if not inc.done and inc.zip is None:
+                        await asyncio.to_thread(inc.abort)
+            for zid, z in list(self.zips.items()):
+                age = now - z.last_seen
+                if (z.zf is None and age > 600) or age > tx.STALE_SECONDS:
+                    self.zips.pop(zid, None)
+                    if z.zf is not None:
+                        await asyncio.to_thread(z.abort)
+
     # ---- laptop side ---------------------------------------------------- #
     async def desk_index(self, request):
         return web.FileResponse(WEB / "desk" / "index.html")
@@ -441,22 +664,109 @@ class Tonefer:
         return web.json_response(History.public(item))
 
     async def desk_upload(self, request):
+        """Laptop → phone. Streams straight to disk (no size limit). With ?zip=Name, every file
+        goes into one archive; each file part may be preceded by "path", "size" and "mtime" fields."""
         reader = await request.multipart()
-        sent = []
-        while (part := await reader.next()) is not None:
-            if not part.filename:
-                continue
-            buf, size = BytesIO(), 0
-            while chunk := await part.read_chunk(1 << 20):
-                size += len(chunk)
-                if size > MAX_FILE:
-                    raise web.HTTPRequestEntityTooLarge(MAX_FILE, size)
-                buf.write(chunk)
-            mime = part.headers.get("Content-Type")
-            item = self.store_file("Sent", part.filename, buf.getvalue(), mime, "laptop")
-            await self.publish(item)
-            sent.append(History.public(item))
+        zname = request.query.get("zip")
+        z = await asyncio.to_thread(tx.ZipBuild, tx.new_id(), zname, "laptop", PARTIAL) if zname else None
+        sent: list[dict] = []
+        fields: dict[str, str] = {}
+        try:
+            while (part := await reader.next()) is not None:
+                if not part.filename:
+                    fields[part.name or ""] = (await part.text()).strip()
+                    continue
+                size = self._int(fields.get("size"))
+                mtime = self._int(fields.get("mtime"), 0) / 1000 or None
+                if z is not None:
+                    await asyncio.to_thread(z.open_entry, fields.get("path") or part.filename, size, mtime)
+                    while chunk := await part.read_chunk(1 << 20):
+                        await asyncio.to_thread(z.write, chunk)
+                    await asyncio.to_thread(z.close_entry)
+                else:
+                    name = safe_name(part.filename)
+                    dest = unique_path(FILES_DIR / "Sent", name)
+                    fh = await asyncio.to_thread(open, dest, "wb")
+                    try:
+                        while chunk := await part.read_chunk(1 << 20):
+                            await asyncio.to_thread(fh.write, chunk)
+                    finally:
+                        fh.close()
+                    mime = part.headers.get("Content-Type")
+                    if not mime or mime == "application/octet-stream":
+                        mime = mimetypes.guess_type(name)[0] or "application/octet-stream"
+                    item = new_item("file", "laptop", name=dest.name, size=dest.stat().st_size, mime=mime,
+                                    path=str(dest.relative_to(FILES_DIR)))
+                    await self.publish(item)
+                    sent.append(History.public(item))
+                fields = {}
+            if z is not None:
+                if z.count == 0:
+                    raise web.HTTPBadRequest(text="Nothing to zip")
+                sent.append(History.public(await self.finish_zip(z, "Sent")))
+        except BaseException:
+            if z is not None and z.zf is not None:
+                await asyncio.to_thread(z.abort)
+            raise
         return web.json_response(sent)
+
+    async def desk_send_folder(self, request):
+        """Opens the system folder picker, zips the chosen folder and offers it to the phone."""
+        body = await request.json() if request.can_read_body else {}
+        path = (body or {}).get("path")
+        if not path:
+            path = await asyncio.to_thread(tx.pick_folder)
+            if path is None:
+                return web.json_response({"picker": False}, status=501)
+            if not path:
+                return web.json_response({"cancelled": True})
+        src = Path(path).expanduser()
+        if not src.is_dir():
+            raise web.HTTPBadRequest(text="That isn't a folder.")
+        name = tx.zip_name(src.name or "Folder")
+        pid = tx.new_id()
+        tmp = PARTIAL / f"{pid}.zip.part"
+        loop = asyncio.get_running_loop()
+        last = [0.0]
+
+        def progress(done: int, total: int, files: int) -> None:
+            now = time.monotonic()
+            if now - last[0] < 0.25 and done < total:
+                return
+            last[0] = now
+            event = {"type": "zipping", "id": pid, "name": name, "done": done, "total": total, "files": files}
+            loop.call_soon_threadsafe(lambda: asyncio.ensure_future(self.desk_send(event)))
+
+        await self.desk_send({"type": "zipping", "id": pid, "name": name, "done": 0, "total": 0, "files": 0})
+        try:
+            count, _ = await asyncio.to_thread(tx.zip_folder, src, tmp, progress)
+            if count == 0:
+                raise ValueError("the folder is empty")
+            dest = unique_path(FILES_DIR / "Sent", name)
+            await asyncio.to_thread(shutil.move, str(tmp), dest)
+        except Exception as e:
+            tmp.unlink(missing_ok=True)
+            await self.desk_send({"type": "zipping", "id": pid, "name": name, "finished": True, "error": str(e)})
+            raise web.HTTPBadRequest(text=f"Couldn't zip {src.name}: {e}")
+        await self.desk_send({"type": "zipping", "id": pid, "name": name, "finished": True})
+        item = new_item("file", "laptop", name=dest.name, size=dest.stat().st_size, mime="application/zip",
+                        path=str(dest.relative_to(FILES_DIR)), files=count)
+        await self.publish(item)
+        return web.json_response(History.public(item))
+
+    async def desk_extract(self, request):
+        item = self.history.get(request.match_info["id"])
+        if not item or item["kind"] != "file" or not item["name"].lower().endswith(".zip"):
+            raise web.HTTPNotFound()
+        path = FILES_DIR / item["path"]
+        if not path.exists():
+            raise web.HTTPGone(text="The zip was moved or deleted.")
+        try:
+            target = await asyncio.to_thread(tx.extract_zip, path)
+        except (OSError, ValueError, __import__("zipfile").BadZipFile) as e:
+            raise web.HTTPBadRequest(text=f"Couldn't unzip: {e}")
+        reveal(target)
+        return web.json_response({"path": str(target), "name": target.name})
 
     async def desk_file(self, request):
         item = self.history.get(request.match_info["id"])
@@ -565,17 +875,8 @@ class Tonefer:
         return web.json_response({"ok": True})
 
     async def desk_open_folder(self, request):
-        target = str(FILES_DIR)
-        try:
-            if sys.platform.startswith("win"):
-                os.startfile(target)  # type: ignore[attr-defined]
-            elif sys.platform == "darwin":
-                subprocess.Popen(["open", target])
-            elif shutil.which("xdg-open"):
-                subprocess.Popen(["xdg-open", target])
-        except Exception:
-            pass
-        return web.json_response({"path": target})
+        reveal(FILES_DIR)
+        return web.json_response({"path": str(FILES_DIR)})
 
     # ---- wiring --------------------------------------------------------- #
     def build(self) -> web.Application:
@@ -588,6 +889,13 @@ class Tonefer:
         r.add_get("/api/speedtest", self.phone_speed_down)
         r.add_post("/api/speedtest", self.phone_speed_up)
         r.add_get("/api/file/{id}", self.phone_file)
+        r.add_post("/api/zip/start", self.phone_zip_start)
+        r.add_post("/api/zip/{zid}/finish", self.phone_zip_finish)
+        r.add_delete("/api/zip/{zid}", self.phone_zip_cancel)
+        r.add_post("/api/upload/start", self.phone_upload_start)
+        r.add_get("/api/upload/{tid}", self.phone_upload_state)
+        r.add_post("/api/upload/{tid}/{index}", self.phone_upload_chunk)
+        r.add_delete("/api/upload/{tid}", self.phone_upload_cancel)
         r.add_get("/desk", self.desk_index)
         r.add_get("/desk/ws", self.desk_ws)
         r.add_post("/desk/api/text", self.desk_text)
@@ -601,17 +909,34 @@ class Tonefer:
         r.add_post("/desk/api/delete/{id}", self.desk_delete)
         r.add_post("/desk/api/clear", self.desk_clear)
         r.add_post("/desk/api/open-folder", self.desk_open_folder)
+        r.add_post("/desk/api/send-folder", self.desk_send_folder)
+        r.add_post("/desk/api/extract/{id}", self.desk_extract)
         r.add_static("/static", WEB / "static")
 
         async def start_watcher(_app):
             _app["watcher"] = asyncio.create_task(self.hotspot_watcher())
+            _app["janitor"] = asyncio.create_task(self.janitor())
 
         async def stop_watcher(_app):
             _app["watcher"].cancel()
+            _app["janitor"].cancel()
 
         app.on_startup.append(start_watcher)
         app.on_cleanup.append(stop_watcher)
         return app
+
+
+def reveal(target: Path) -> None:
+    """Opens a folder in the system file manager."""
+    try:
+        if sys.platform.startswith("win"):
+            os.startfile(str(target))  # type: ignore[attr-defined]
+        elif sys.platform == "darwin":
+            subprocess.Popen(["open", str(target)])
+        elif shutil.which("xdg-open"):
+            subprocess.Popen(["xdg-open", str(target)])
+    except Exception:
+        pass
 
 
 def secrets_equal(a: str, b: str) -> bool:

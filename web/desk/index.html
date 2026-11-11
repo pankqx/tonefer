@@ -144,6 +144,7 @@
     display: none; place-items: center; text-align: center;
   }
   .drop .big { font-size: 24px; color: var(--teal); }
+  .drop p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
   .drop.on { display: grid; }
 
   @media (max-width: 960px) {
@@ -267,13 +268,22 @@
         <div class="scroll" id="scroll"><div class="timeline" id="timeline"></div></div>
         <div class="uploads" id="uploads"></div>
         <form class="composer" id="composer">
-          <button type="button" class="round" id="attach" title="Send photos or files"></button>
+          <div class="attach-wrap">
+            <button type="button" class="round" id="attach" title="Send files or a folder" aria-haspopup="menu"></button>
+            <div class="attach-menu" id="attachMenu" role="menu" hidden>
+              <button type="button" role="menuitem" id="pickFiles"><span class="ico" data-icon="file"></span><span>Files<small>Each one on its own</small></span></button>
+              <button type="button" role="menuitem" id="pickZip"><span class="ico" data-icon="zip"></span><span>Files as one zip<small>Several files, one download</small></span></button>
+              <button type="button" role="menuitem" id="pickFolder"><span class="ico" data-icon="folder"></span><span>Folder as zip<small>A whole folder, any size</small></span></button>
+            </div>
+          </div>
           <input type="file" id="file" multiple hidden>
+          <input type="file" id="fileZip" multiple hidden>
+          <input type="file" id="folderInput" webkitdirectory multiple hidden>
           <textarea id="text" rows="1" placeholder="Type a note for your phone…"></textarea>
           <button class="round send" id="sendBtn" disabled title="Send"></button>
         </form>
         <div class="hint"><kbd>Enter</kbd> send · drop files anywhere · <kbd>Ctrl+V</kbd> paste image · <kbd>F1</kbd> instructions</div>
-        <div class="drop" id="drop"><div class="big">Drop to send</div></div>
+        <div class="drop" id="drop"><div><div class="big">Drop to send</div><p>Folders are sent as a zip</p></div></div>
       </div>
 
       <div class="pane help" id="paneHelp" hidden>

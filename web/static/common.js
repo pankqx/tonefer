@@ -10,6 +10,9 @@
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
     x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>',
     folder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>',
+    file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6.5 3.5h7l4 4v13h-11z"/><path d="M13.5 3.5v4h4"/></svg>',
+    zip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M5.5 3.5h13v17h-13z"/><path d="M12 3.5v2m0 2v2m0 2v2" stroke-linecap="square"/><path d="M10.5 14.5h3v3h-3z"/></svg>',
+    unzip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5h17v11h-17zM5 8.5l2-4h10l2 4M12 11.5v5m0 0-2.5-2.5M12 16.5l2.5-2.5"/></svg>',
     qr: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/></svg>',
   };
 
@@ -119,12 +122,14 @@
       body = `<img class="thumb" alt="${esc(item.name)}" loading="lazy">`;
     } else {
       const ext = (item.name.split(".").pop() || "file").slice(0, 4);
-      body = `<div class="file-row"><div class="badge">${esc(ext)}</div><div style="min-width:0"><div class="name">${esc(item.name)}</div><div class="size">${size(item.size)}</div></div></div>`;
+      const count = item.files ? ` · ${item.files} file${item.files === 1 ? "" : "s"}` : "";
+      body = `<div class="file-row"><div class="badge">${esc(ext)}</div><div style="min-width:0"><div class="name">${esc(item.name)}</div><div class="size">${size(item.size)}${count}</div></div></div>`;
     }
 
     const actions = [];
     if (item.kind === "text") actions.push(`<button class="icon-btn" data-act="copy" title="Copy">${ICONS.copy}</button>`);
     else actions.push(`<button class="icon-btn" data-act="save" title="Save">${ICONS.down}</button>`);
+    if (opts.extract && /\.zip$/i.test(item.name || "")) actions.push(`<button class="icon-btn" data-act="extract" title="Unzip into a folder">${ICONS.unzip}</button>`);
     if (opts.remove) actions.push(`<button class="icon-btn" data-act="remove" title="Delete">${ICONS.trash}</button>`);
 
     const extra = isImage ? ` · ${size(item.size)}` : "";
@@ -144,6 +149,7 @@
         if (ok) { b.innerHTML = ICONS.check; setTimeout(() => (b.innerHTML = ICONS.copy), 1200); }
         toast(ok ? "Copied" : "Copy failed: long-press the text instead");
       } else if (act === "save") opts.download(item);
+      else if (act === "extract") opts.extract(item);
       else if (act === "remove") opts.remove(item);
     });
     return el;
@@ -252,6 +258,10 @@
     const m = document.getElementById("loaderMsg");
     if (m) { clearTimeout(stepTimer); m.textContent = text; }
   }
+
+  // Icons referenced from markup: <span data-icon="folder"></span>
+  const fillIcons = () => document.querySelectorAll("[data-icon]").forEach((el) => { el.innerHTML = ICONS[el.dataset.icon] || ""; });
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fillIcons); else fillIcons();
 
   window.T = { hideLoader, loaderText, mark, brand, ICONS, esc, size, time, copyText, toast, renderTimeline };
 })();
