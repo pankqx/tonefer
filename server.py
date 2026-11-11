@@ -290,6 +290,7 @@ class Tonefer:
         self._net_cache: dict = {}
         self.config = Config(APP_DIR / "config.json")
         self.hotspot_status = ""
+        self.downloads = 0   # laptop → phone streams in flight
         self.uploads: dict[str, tx.Incoming] = {}
         self.zips: dict[str, tx.ZipBuild] = {}
         shutil.rmtree(PARTIAL, ignore_errors=True)  # leftovers from a crash
@@ -418,7 +419,7 @@ class Tonefer:
         return web.FileResponse(WEB / "phone" / "index.html")
 
     async def phone_ws(self, request):
-        ws = web.WebSocketResponse(heartbeat=20, max_msg_size=4 * 1024 * 1024)
+        ws = web.WebSocketResponse(heartbeat=45, max_msg_size=4 * 1024 * 1024)  # generous: a busy upload delays pongs
         await ws.prepare(request)
         key, sid = request["key"], request["sid"]
         self.phones[ws] = sid
@@ -556,18 +557,23 @@ class Tonefer:
             sealed = key.seal(tx.header(tid, i, i == frames - 1) + fh.read(tx.DCHUNK))
             return struct.pack(">I", len(sealed)) + sealed
 
-        with open(path, "rb") as fh:
-            fh.seek(start * tx.DCHUNK)
-            for i in range(start, frames):
-                out = await asyncio.to_thread(frame, fh, i)
-                await resp.write(out)
-                await meter.add(len(out) - tx.FRAME_OVERHEAD)
+        self.downloads += 1
+        try:
+            with open(path, "rb") as fh:
+                fh.seek(start * tx.DCHUNK)
+                for i in range(start, frames):
+                    out = await asyncio.to_thread(frame, fh, i)
+                    await resp.write(out)
+                    await meter.add(len(out) - tx.FRAME_OVERHEAD)
+        finally:
+            self.downloads -= 1
         await resp.write_eof()
         await meter.finish()
         return resp
 
     async def phone_zip_start(self, request):
         meta = self._meta(request, await request.text())
+        self.need_space(self._int(meta.get("size")), self.recv_dir(request["sid"]))
         zid = tx.new_id()
         z = await asyncio.to_thread(tx.ZipBuild, zid, str(meta.get("name") or "Tonefer"), "phone", PARTIAL,
                                     self._int(meta.get("files"), 0), self._int(meta.get("size")))
@@ -576,10 +582,25 @@ class Tonefer:
         self.zips[zid] = z
         return web.json_response({"zip": zid, "name": z.name})
 
+    def need_space(self, size: int, where: Path) -> None:
+        """Refuses a transfer the disk can't hold, with a message the phone shows as it is."""
+        if size <= 0:
+            return
+        try:
+            where.mkdir(parents=True, exist_ok=True)
+            free = min(shutil.disk_usage(where).free, shutil.disk_usage(PARTIAL).free)
+        except OSError:
+            return
+        if free < size + (200 << 20):
+            raise web.HTTPInsufficientStorage(
+                text=f"The laptop's disk is too full: {free / 1e9:.1f} GB free, {size / 1e9:.1f} GB needed")
+
     async def phone_upload_start(self, request):
         meta = self._meta(request, await request.text())
         name = safe_name(str(meta.get("name") or "file"))
         size = self._int(meta.get("size"))
+        if not meta.get("zip"):
+            self.need_space(size, self.recv_dir(request["sid"]))
         mime = str(meta.get("mime") or "") or mimetypes.guess_type(name)[0] or "application/octet-stream"
         tid = tx.new_id()
         zid = meta.get("zip")
@@ -716,6 +737,31 @@ class Tonefer:
             if z.meter is not None:
                 await z.meter.finish()
         return web.json_response({"ok": True})
+
+    async def stay_awake(self) -> None:
+        """Keeps the laptop from going to sleep while a transfer is moving."""
+        proc = None
+        try:
+            while True:
+                await asyncio.sleep(10)
+                now = time.monotonic()
+                busy = self.downloads > 0 or any(not i.done and now - i.last_seen < 90 for i in self.uploads.values())
+                if sys.platform.startswith("win"):
+                    try:
+                        import ctypes
+                        ctypes.windll.kernel32.SetThreadExecutionState(0x80000001 if busy else 0x80000000)
+                    except Exception:
+                        pass
+                elif busy and proc is None and shutil.which("systemd-inhibit"):
+                    proc = subprocess.Popen(["systemd-inhibit", "--what=sleep:idle", "--who=Tonefer",
+                                             "--why=Transfer in progress", "sleep", "infinity"],
+                                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                elif not busy and proc is not None:
+                    proc.terminate()
+                    proc = None
+        finally:
+            if proc is not None:
+                proc.terminate()
 
     async def janitor(self) -> None:
         """Drops transfers the phone walked away from, so half files don't pile up."""
@@ -1118,10 +1164,12 @@ class Tonefer:
         async def start_watcher(_app):
             _app["watcher"] = asyncio.create_task(self.hotspot_watcher())
             _app["janitor"] = asyncio.create_task(self.janitor())
+            _app["awake"] = asyncio.create_task(self.stay_awake())
 
         async def stop_watcher(_app):
             _app["watcher"].cancel()
             _app["janitor"].cancel()
+            _app["awake"].cancel()
 
         app.on_startup.append(start_watcher)
         app.on_cleanup.append(stop_watcher)
