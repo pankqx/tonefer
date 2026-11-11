@@ -145,10 +145,15 @@ After the one-click setup, a session takes **two taps**:
 |---|---|---|
 | Send a note | Type, press <kbd>Enter</kbd> | Type, tap ↑ |
 | Send photos or files | Drag onto the window, <kbd>Ctrl+V</kbd>, or **+** | **+**, or *Share → Tonefer* in any app (Android app) |
+| Send a folder | **+** → **Folder as zip**, or drag the folder onto the window | **+** → **Folder as zip** |
+| Send several files as one zip | **+** → **Files as one zip** | **+** → **Files as one zip**, or the app setting *Share several files as one zip* |
+| Unzip a received zip | Box icon on the zip | Open it with your Files app |
 | Copy a received note | Copy icon | Copy icon, or automatic (app setting) |
 | Save a received photo | Click it, then **Save** | Tap it, then **Save**, or automatic (app setting) |
 | Find received files | Tools → **Open Tonefer folder** | Pictures/Tonefer or Downloads |
 | Read these instructions | **Instructions** tab or <kbd>F1</kbd> | **?** button |
+
+**Folders and big files.** There is no size limit. Files travel in small encrypted pieces, so a multi-gigabyte video or a folder of thousands of photos works, and a piece lost to a hotspot hiccup is simply sent again. A folder is zipped as it travels, with its sub-folders kept. Photos and videos are stored in the zip as they are (they don't compress further); documents are compressed. In a phone *browser*, files you receive are assembled in the browser's memory, so for files over about 1 GB to the phone use the Android app.
 
 Files sent to the laptop are saved in `~/Tonefer/Received`. History is kept on both devices until you clear it.
 

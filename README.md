@@ -27,6 +27,7 @@ Most phone-to-laptop tools go through someone else's server, need an account, or
 | **Works anywhere** | Phone hotspot, USB tethering or shared Wi‑Fi. Internet isn't needed and local transfers don't use mobile data. |
 | **End-to-end encrypted** | One QR scan shares a 256‑bit key. Every payload is sealed with XSalsa20‑Poly1305, and anything that doesn't decrypt is rejected. |
 | **One click** | Runs in the background at login, appears in the app launcher, and auto-joins your hotspot. |
+| **Folders and big files** | Send a whole folder as a zip, in either direction. No size limit: everything moves in small encrypted chunks. |
 | **History** | Every transfer stays in a timeline on both devices until you clear it. |
 | **Android app** | *Share → Tonefer* from any app, automatic discovery, background notifications and a full customisation menu. |
 | **Live speedometer** | Measures the real speed of every transfer, plus a one-click speed test. |
@@ -70,6 +71,7 @@ Every release is built, installed and tested automatically on Ubuntu 24.04 and W
 
 ```
 server.py              Laptop app: pairing, encryption, history, routes
+transfer.py            Chunked transfers and zip building (protocol v2)
 netinfo.py             Address selection, Wi‑Fi name, firewall detection, doctor
 web/desk/              Laptop interface (Transfers · Instructions)
 web/phone/             Phone web interface
@@ -97,7 +99,7 @@ Configuration (environment variables): `TONEFER_PORT` (8765), `TONEFER_FILES` (`
 - [x] Native Android app with share target and customisation
 - [x] Ubuntu app (.deb) with its own window
 - [x] Windows app with installer
-- [ ] Chunked streaming for very large files
+- [x] Folders as zip and files of any size (chunked, encrypted)
 - [ ] Clipboard sync (quick-settings tile)
 
 ---
