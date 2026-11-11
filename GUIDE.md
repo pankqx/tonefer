@@ -149,11 +149,15 @@ After the one-click setup, a session takes **two taps**:
 | Send several files as one zip | **+** → **Files as one zip** | **+** → **Files as one zip**, or the app setting *Share several files as one zip* |
 | Unzip a received zip | Box icon on the zip | Open it with your Files app |
 | Copy a received note | Copy icon | Copy icon, or automatic (app setting) |
+| Choose where files are saved | Tools → **Change folder**, or tick **Ask where to save each file** | App setting *Ask where to save* |
+| Find something old | Search box above the history | |
 | Save a received photo | Click it, then **Save** | Tap it, then **Save**, or automatic (app setting) |
 | Find received files | Tools → **Open Tonefer folder** | Pictures/Tonefer or Downloads |
 | Read these instructions | **Instructions** tab or <kbd>F1</kbd> | **?** button |
 
 **Folders and big files.** There is no size limit. Files travel in small encrypted pieces, so a multi-gigabyte video or a folder of thousands of photos works, and a piece lost to a hotspot hiccup is simply sent again. A folder is zipped as it travels, with its sub-folders kept. Photos and videos are stored in the zip as they are (they don't compress further); documents are compressed. In a phone *browser*, files you receive are assembled in the browser's memory, so for files over about 1 GB to the phone use the Android app.
+
+**Guest sessions: a friend sends to your laptop.** In the laptop view open **Guest sessions**, type your friend's name and press **Start session**. Your friend joins the same hotspot and scans the code with their phone camera (no app needed). They get their own key: they see only what they and you exchange in that session, never your history, and their files land in `Received/Guest <name>`. A **Send to** switch appears above the message box so you can reply to them. Press **End session** to cut them off; sessions also end by themselves after 12 hours. Your own phone stays paired throughout.
 
 Files sent to the laptop are saved in `~/Tonefer/Received`. History is kept on both devices until you clear it.
 

@@ -87,3 +87,12 @@ frame = length (uint32, big-endian) || seal( header || up to 1 MB of data )
 
 `&from=<n>` resumes at frame `n`. A server without v2 ignores `?v=2` and returns the v1 body,
 so clients check `X-Tonefer-Format`.
+
+## Guest sessions
+
+The laptop can hand out extra keys. A guest key works exactly like the owner's key (same token
+derivation, same endpoints), but the session it opens is fenced off: `hello` and `item` events
+carry only that session's items, `/api/file/<id>` answers `404` for anything else, and uploads
+are stored under `Received/Guest <name>`. Items made in a guest session carry `"session": "<id>"`.
+`hello` includes `"guest": "<name>"` so the client can show it. Ending the session closes its
+sockets with `4001` and its token starts answering `401`. Sessions expire after 12 hours.

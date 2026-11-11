@@ -239,7 +239,8 @@
         T.hideLoader();
         retry = 0;
         items = m.items;
-        status(m.host || "laptop", true);
+        status((m.host || "laptop") + (m.guest ? " · guest" : ""), true);
+        if (m.guest) opts.emptyText = "You're a guest on this laptop. Send a note, photos or files; only you and the laptop's owner see them.";
         draw(true);
       } else if (m.type === "item") {
         items.push(m.item);

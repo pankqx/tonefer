@@ -125,6 +125,7 @@ class ZipBuild:
         self.last_seen = time.monotonic()
         self.meter = None
         self.item: str | None = None    # history id once published
+        self.sid: str | None = None     # guest session it belongs to (None = owner)
 
     def _unique(self, arc: str) -> str:
         if arc not in self.used:
@@ -188,6 +189,7 @@ class Incoming:
         self.lock = asyncio.Lock()
         self.last_seen = time.monotonic()
         self.meter = None
+        self.sid: str | None = None
 
     def write(self, data) -> None:
         if self.zip is not None:

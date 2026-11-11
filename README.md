@@ -28,6 +28,7 @@ Most phone-to-laptop tools go through someone else's server, need an account, or
 | **End-to-end encrypted** | One QR scan shares a 256‑bit key. Every payload is sealed with XSalsa20‑Poly1305, and anything that doesn't decrypt is rejected. |
 | **One click** | Runs in the background at login, appears in the app launcher, and auto-joins your hotspot. |
 | **Folders and big files** | Send a whole folder as a zip, in either direction. No size limit: everything moves in small encrypted chunks. |
+| **Guest sessions** | A friend scans a separate code to send to your laptop. They see only their own transfers and are cut off when you end the session. |
 | **History** | Every transfer stays in a timeline on both devices until you clear it. |
 | **Android app** | *Share → Tonefer* from any app, automatic discovery, background notifications and a full customisation menu. |
 | **Live speedometer** | Measures the real speed of every transfer, plus a one-click speed test. |

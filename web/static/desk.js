@@ -52,10 +52,24 @@
     },
   };
 
+  // ---- guests, search ----
+  let guests = [];
+  const guestNames = {};   // remembered after a session ends, so old items keep their label
+  const guestName = (id) => guestNames[id] || "guest";
+  opts.who = (item) => {
+    if (!item.session) return "";
+    const n = guestNames[item.session];
+    return item.origin === "laptop" ? `you → ${n || "guest"}` : (n ? `guest · ${n}` : "guest");
+  };
+  let query = "";
+  $("search").addEventListener("input", (e) => { query = e.target.value.trim().toLowerCase(); draw(false); });
+
   function draw(scroll = true) {
     const sc = $("scroll");
     const nearBottom = sc.scrollHeight - sc.scrollTop - sc.clientHeight < 120;
-    renderTimeline($("timeline"), items, opts);
+    const shown = query ? items.filter((i) => ((i.text || "") + " " + (i.name || "")).toLowerCase().includes(query)) : items;
+    renderTimeline($("timeline"), shown, query && !shown.length
+      ? { ...opts, emptyTitle: "Nothing found", emptyText: "No note or file name matches your search." } : opts);
     if (scroll || nearBottom) sc.scrollTop = sc.scrollHeight;
   }
 
@@ -142,14 +156,17 @@
       if (m.type === "hello") {
         T.hideLoader();
         items = m.items;
+        if (m.guests) setGuests(m.guests);
         $("host").textContent = m.host;
         setPresence(m.phones);
         draw();
       } else if (m.type === "presence") {
         setPresence(m.phones);
+        if (m.guests) setGuests(m.guests);
       } else if (m.type === "item") {
         items.push(m.item);
         draw();
+        if (m.item.origin === "phone" && m.item.kind === "file") askWhere(m.item);
         if (m.item.origin === "phone") {
           if (!$("paneHelp").hidden) showTab("transfers");
           toast(m.item.kind === "text" ? "New note from your phone" : `Got ${m.item.name}`);
@@ -230,7 +247,7 @@
     ta.value = ""; autosize();
     const r = await fetch("/desk/api/text", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, to: $("toSel").value }),
     });
     if (!r.ok) { ta.value = text; autosize(); toast("Couldn't send"); }
   }
@@ -262,7 +279,9 @@
   // The laptop zips the folder straight from disk (fast, no copying through the page).
   // Without a system folder picker, fall back to the browser's own.
   async function sendFolder() {
-    const r = await fetch("/desk/api/send-folder", { method: "POST" });
+    const r = await fetch("/desk/api/send-folder", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: $("toSel").value }),
+    });
     if (r.status === 501) return $("folderInput").click();
     if (!r.ok) return toast(await r.text());
   }
@@ -304,7 +323,10 @@
       fd.append("file", file, file.name || "pasted.png");
     }
     const t0 = performance.now();
-    xhr.open("POST", "/desk/api/upload" + (zipName ? "?zip=" + encodeURIComponent(zipName) : ""));
+    const qs = new URLSearchParams();
+    if (zipName) qs.set("zip", zipName);
+    if ($("toSel").value) qs.set("to", $("toSel").value);
+    xhr.open("POST", "/desk/api/upload?" + qs);
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) row.set(e.loaded / e.total, mbps(e.loaded, performance.now() - t0));
       if (zipName && e.loaded === e.total) row.label(`Finishing ${zipName}.zip`);
@@ -352,6 +374,108 @@
     const files = [...(e.clipboardData?.files || [])];
     if (files.length) { e.preventDefault(); sendFiles(files); }
   });
+
+  // ---- guest sessions ----
+  const openQr = {};   // guest id -> QR svg currently shown
+  function setGuests(list) {
+    guests = list;
+    list.forEach((g) => { guestNames[g.id] = g.name; });
+    const box = $("guestList");
+    box.innerHTML = "";
+    for (const g of list) {
+      const hours = Math.max(0, (g.expires - Date.now()) / 3600000);
+      const el = document.createElement("div");
+      el.className = "guest";
+      el.innerHTML = `<div class="head"><i class="dot ${g.online ? "on" : ""}"></i><b></b></div>
+        <div class="sub">${g.online ? "Connected" : "Waiting for them to scan"} · ends in ${hours >= 1 ? Math.round(hours) + " h" : Math.round(hours * 60) + " min"}</div>
+        ${openQr[g.id] ? `<div class="qr">${openQr[g.id]}</div>` : ""}
+        <div class="row"><button class="btn ghost" data-a="qr">${openQr[g.id] ? "Hide code" : "Show code"}</button><button class="btn ghost danger" data-a="end">End session</button></div>`;
+      el.querySelector("b").textContent = g.name;
+      el.querySelector('[data-a="qr"]').onclick = async () => {
+        if (openQr[g.id]) delete openQr[g.id];
+        else {
+          const d = await (await fetch(`/desk/api/guest/${g.id}` + (userChoseIp ? "?ip=" + encodeURIComponent(userChoseIp) : ""))).json();
+          if (!d.svg) return toast("Connect the laptop to the hotspot first");
+          openQr[g.id] = d.svg;
+        }
+        setGuests(guests);
+      };
+      el.querySelector('[data-a="end"]').onclick = async () => {
+        delete openQr[g.id];
+        await fetch(`/desk/api/guest/${g.id}/end`, { method: "POST" });
+        toast(`${g.name}'s session ended`);
+      };
+      box.appendChild(el);
+    }
+    // "Send to" appears only while a guest session is open.
+    const sel = $("toSel"), keep = sel.value;
+    sel.innerHTML = "";
+    sel.add(new Option("My phone", ""));
+    list.forEach((g) => sel.add(new Option(`Guest · ${g.name}`, g.id)));
+    sel.value = list.some((g) => g.id === keep) ? keep : "";
+    $("sendTo").hidden = !list.length;
+  }
+  $("guestForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const r = await fetch("/desk/api/guest" + (userChoseIp ? "?ip=" + encodeURIComponent(userChoseIp) : ""), {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: $("guestName").value }),
+    });
+    if (!r.ok) return toast(await r.text());
+    const d = await r.json();
+    $("guestName").value = "";
+    if (d.svg) openQr[d.id] = d.svg;
+    guestNames[d.id] = d.name;
+    setGuests(guests.some((g) => g.id === d.id) ? guests : [...guests, { id: d.id, name: d.name, expires: d.expires, online: 0 }]);
+    toast(d.svg ? `Ask ${d.name} to scan the code` : "Connect the laptop to the hotspot, then press Show code");
+  });
+
+  // ---- where received files are saved ----
+  let saveAsk = false;
+  function showSave(d) {
+    saveAsk = d.ask;
+    $("savePath").textContent = d.dir;
+    $("savePath").title = d.dir;
+    $("saveReset").hidden = !d.custom;
+    $("saveAsk").checked = d.ask;
+  }
+  async function setSave(body) {
+    const r = await fetch("/desk/api/save-location", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (r.status === 501) {
+      const typed = prompt("Folder to save received files in (full path):", $("savePath").textContent);
+      if (typed) return setSave({ dir: typed });
+      return;
+    }
+    if (!r.ok) return toast(await r.text());
+    showSave(await r.json());
+  }
+  fetch("/desk/api/save-location").then((r) => r.json()).then(showSave).catch(() => {});
+  $("saveChange").onclick = () => setSave({ pick: true });
+  $("saveReset").onclick = () => setSave({ reset: true });
+  $("saveAsk").onchange = (e) => setSave({ ask: e.target.checked });
+
+  // With "ask" on, each file from a phone gets a bar: pick a folder for it, or leave it where it is.
+  function askWhere(item) {
+    if (!saveAsk) return;
+    const el = document.createElement("div");
+    el.className = "ask";
+    el.innerHTML = `<span></span><button class="btn" data-a="pick">Choose folder…</button><button class="btn ghost" data-a="keep">Keep in Tonefer folder</button>`;
+    el.querySelector("span").textContent = `Where should ${item.name} go?`;
+    el.querySelector('[data-a="keep"]').onclick = () => el.remove();
+    el.querySelector('[data-a="pick"]').onclick = async () => {
+      let r = await fetch(`/desk/api/move/${item.id}`, { method: "POST" });
+      if (r.status === 501) {
+        const typed = prompt(`Folder to save ${item.name} in (full path):`);
+        if (!typed) return;
+        r = await fetch(`/desk/api/move/${item.id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dir: typed }) });
+      }
+      if (!r.ok) return toast(await r.text());
+      const d = await r.json();
+      if (d.cancelled) return;
+      el.remove();
+      toast(`Saved to ${d.dir}`);
+    };
+    $("asks").appendChild(el);
+  }
 
   // ---- side actions ----
   $("folder").onclick = async () => {

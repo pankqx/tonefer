@@ -58,24 +58,10 @@ LOCAL_HOSTS = {"127.0.0.1", "localhost", "[::1]", "::1"}
 # --------------------------------------------------------------------------- #
 # Crypto
 # --------------------------------------------------------------------------- #
-class Vault:
-    """Holds the pairing key. Rotating it unpairs every phone."""
+class Key:
+    """A 32-byte secret shared with a phone, and everything derived from it."""
 
-    def __init__(self, path: Path):
-        self.path = path
-        if path.exists() and len(path.read_bytes()) == 32:
-            self.key = path.read_bytes()
-        else:
-            self.rotate()
-
-    def rotate(self) -> None:
-        self.key = nacl.utils.random(nacl.secret.SecretBox.KEY_SIZE)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_bytes(self.key)
-        try:
-            os.chmod(self.path, 0o600)
-        except OSError:
-            pass
+    key: bytes
 
     @property
     def box(self) -> nacl.secret.SecretBox:
@@ -101,6 +87,47 @@ class Vault:
 
     def open_json(self, s: str):
         return json.loads(self.open(base64.b64decode(s)))
+
+
+class Vault(Key):
+    """Holds the owner's pairing key. Rotating it unpairs every phone."""
+
+    def __init__(self, path: Path):
+        self.path = path
+        if path.exists() and len(path.read_bytes()) == 32:
+            self.key = path.read_bytes()
+        else:
+            self.rotate()
+
+    def rotate(self) -> None:
+        self.key = nacl.utils.random(nacl.secret.SecretBox.KEY_SIZE)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_bytes(self.key)
+        try:
+            os.chmod(self.path, 0o600)
+        except OSError:
+            pass
+
+
+GUEST_HOURS = 12
+
+
+class Guest(Key):
+    """A guest session: a friend's phone gets its own key and sees only its own transfers.
+    Ending the session (or its expiry) cuts that phone off without touching yours."""
+
+    def __init__(self, name: str, gid: str | None = None, key: bytes | None = None, expires: float | None = None):
+        self.id = gid or uuid.uuid4().hex[:8]
+        self.name = name
+        self.key = key or nacl.utils.random(nacl.secret.SecretBox.KEY_SIZE)
+        self.expires = expires or time.time() + GUEST_HOURS * 3600
+
+    def dump(self) -> dict:
+        return {"id": self.id, "name": self.name, "key": base64.b64encode(self.key).decode(), "expires": self.expires}
+
+    @staticmethod
+    def load(d: dict) -> "Guest":
+        return Guest(d["name"], d["id"], base64.b64decode(d["key"]), d["expires"])
 
 
 # --------------------------------------------------------------------------- #
@@ -249,7 +276,15 @@ class Tonefer:
         FILES_DIR.mkdir(parents=True, exist_ok=True)
         self.vault = Vault(APP_DIR / "pairing.key")
         self.history = History(APP_DIR / "history.json")
-        self.phones: set[web.WebSocketResponse] = set()
+        self.phones: dict[web.WebSocketResponse, str | None] = {}   # socket -> guest id (None = owner)
+        self.guests: dict[str, Guest] = {}
+        try:
+            for d in json.loads((APP_DIR / "guests.json").read_text("utf-8")):
+                g = Guest.load(d)
+                if g.expires > time.time():
+                    self.guests[g.id] = g
+        except (OSError, ValueError, KeyError):
+            pass
         self.desks: set[web.WebSocketResponse] = set()
         self._net_checked = -1e9
         self._net_cache: dict = {}
@@ -261,18 +296,36 @@ class Tonefer:
         PARTIAL.mkdir(parents=True, exist_ok=True)
 
     # ---- broadcasting --------------------------------------------------- #
-    async def broadcast(self, event: dict) -> None:
-        for ws in list(self.desks):
+    def key_of(self, sid: str | None) -> Key | None:
+        return self.vault if sid is None else self.guests.get(sid)
+
+    def save_guests(self) -> None:
+        path = APP_DIR / "guests.json"
+        path.write_text(json.dumps([g.dump() for g in self.guests.values()]), "utf-8")
+        try:
+            os.chmod(path, 0o600)
+        except OSError:
+            pass
+
+    async def to_phones(self, event: dict, sid: str | None = "*") -> None:
+        """Sends an event to phones, sealed with each phone's own key. sid "*" = every session."""
+        sealed: dict[str | None, str] = {}
+        for ws, s in list(self.phones.items()):
+            if sid != "*" and s != sid:
+                continue
+            key = self.key_of(s)
+            if key is None:
+                continue
+            if s not in sealed:
+                sealed[s] = key.seal_json(event)
             try:
-                await ws.send_str(json.dumps(event))
+                await ws.send_str(sealed[s])
             except Exception:
-                self.desks.discard(ws)
-        sealed = self.vault.seal_json(event)
-        for ws in list(self.phones):
-            try:
-                await ws.send_str(sealed)
-            except Exception:
-                self.phones.discard(ws)
+                self.phones.pop(ws, None)
+
+    async def broadcast(self, event: dict, sid: str | None = "*") -> None:
+        await self.desk_send(event)
+        await self.to_phones(event, sid)
 
     async def desk_send(self, event: dict) -> None:
         msg = json.dumps(event)
@@ -283,7 +336,7 @@ class Tonefer:
                 self.desks.discard(ws)
 
     async def announce_presence(self) -> None:
-        msg = json.dumps({"type": "presence", "phones": len(self.phones)})
+        msg = json.dumps({"type": "presence", "phones": len(self.phones), "guests": self.guest_list()})
         for ws in list(self.desks):
             try:
                 await ws.send_str(msg)
@@ -292,16 +345,39 @@ class Tonefer:
 
     async def publish(self, item: dict) -> dict:
         self.history.add(item)
-        await self.broadcast({"type": "item", "item": History.public(item)})
+        # Each phone only hears about its own session's items; the laptop sees everything.
+        await self.broadcast({"type": "item", "item": History.public(item)}, item.get("session"))
         return item
 
-    def store_file(self, folder: str, name: str, data: bytes, mime: str | None, origin: str) -> dict:
+    def guest_list(self) -> list[dict]:
+        online = list(self.phones.values())
+        return [{"id": g.id, "name": g.name, "expires": int(g.expires * 1000), "online": online.count(g.id)}
+                for g in self.guests.values()]
+
+    # ---- where files live ------------------------------------------------ #
+    def recv_dir(self, sid: str | None = None) -> Path:
+        base = Path(self.config.get("received_dir") or FILES_DIR / "Received")
+        g = self.guests.get(sid) if sid else None
+        return base / f"Guest {safe_name(g.name)}" if g else base
+
+    @staticmethod
+    def rel(dest: Path) -> str:
+        """Stored path: relative inside the Tonefer folder, absolute anywhere else."""
+        try:
+            return str(dest.relative_to(FILES_DIR))
+        except ValueError:
+            return str(dest)
+
+    @staticmethod
+    def tag(sid: str | None) -> dict:
+        return {"session": sid} if sid else {}
+
+    def store_file(self, folder: Path, name: str, data: bytes, mime: str | None, origin: str, sid: str | None = None) -> dict:
         name = safe_name(name)
-        dest = unique_path(FILES_DIR / folder, name)
+        dest = unique_path(folder, name)
         dest.write_bytes(data)
         mime = mime or mimetypes.guess_type(name)[0] or "application/octet-stream"
-        return new_item("file", origin, name=dest.name, size=len(data), mime=mime,
-                        path=str(dest.relative_to(FILES_DIR)))
+        return new_item("file", origin, name=dest.name, size=len(data), mime=mime, path=self.rel(dest), **self.tag(sid))
 
     # ---- middleware ----------------------------------------------------- #
     @web.middleware
@@ -321,8 +397,14 @@ class Tonefer:
                     raise web.HTTPForbidden(text="Requests from other websites aren't allowed.")
         elif request.path.startswith("/api") or request.path == "/ws":
             token = request.headers.get("X-Tonefer-Token") or request.query.get("t", "")
-            if not secrets_equal(token, self.vault.token):
-                raise web.HTTPUnauthorized(text="Not paired. Scan the QR code on your laptop.")
+            if secrets_equal(token, self.vault.token):
+                request["key"], request["sid"] = self.vault, None
+            else:
+                now = time.time()
+                g = next((g for g in self.guests.values() if g.expires > now and secrets_equal(token, g.token)), None)
+                if g is None:
+                    raise web.HTTPUnauthorized(text="Not paired. Scan the QR code on your laptop.")
+                request["key"], request["sid"] = g, g.id
         resp = await handler(request)
         if getattr(resp, "prepared", False):
             return resp
@@ -338,25 +420,29 @@ class Tonefer:
     async def phone_ws(self, request):
         ws = web.WebSocketResponse(heartbeat=20, max_msg_size=4 * 1024 * 1024)
         await ws.prepare(request)
-        self.phones.add(ws)
+        key, sid = request["key"], request["sid"]
+        self.phones[ws] = sid
         await self.announce_presence()
-        await ws.send_str(self.vault.seal_json(
-            {"type": "hello", "host": platform.node(), "items": self.history.public_list()}))
+        hello = {"type": "hello", "host": platform.node(),
+                 "items": [History.public(i) for i in self.history.items if i.get("session") == sid]}
+        if sid:
+            hello["guest"] = key.name
+        await ws.send_str(key.seal_json(hello))
         try:
             async for msg in ws:
                 if msg.type != WSMsgType.TEXT:
                     continue
                 try:
-                    data = self.vault.open_json(msg.data)
+                    data = key.open_json(msg.data)
                 except (nacl.exceptions.CryptoError, ValueError):
                     await ws.close(code=4001, message=b"bad key")
                     break
                 if data.get("type") == "text":
                     text = str(data.get("text", ""))[:100_000]
                     if text.strip():
-                        await self.publish(new_item("text", "phone", text=text))
+                        await self.publish(new_item("text", "phone", text=text, **self.tag(sid)))
         finally:
-            self.phones.discard(ws)
+            self.phones.pop(ws, None)
             await self.announce_presence()
         return ws
 
@@ -366,8 +452,9 @@ class Tonefer:
     async def phone_upload(self, request):
         if request.content_length and request.content_length > MAX_FILE + 1024:
             raise web.HTTPRequestEntityTooLarge(MAX_FILE, request.content_length)
+        key, sid = request["key"], request["sid"]
         try:
-            meta = self.vault.open_json(request.headers.get("X-Tonefer-Meta", ""))
+            meta = key.open_json(request.headers.get("X-Tonefer-Meta", ""))
         except (nacl.exceptions.CryptoError, ValueError):
             raise web.HTTPForbidden(text="Payload did not decrypt. Re-pair your phone.")
         name = str(meta.get("name", "file"))
@@ -380,16 +467,16 @@ class Tonefer:
             await meter.add(len(chunk))
         await meter.finish()
         try:
-            data = await asyncio.to_thread(self.vault.open, bytes(buf))
+            data = await asyncio.to_thread(key.open, bytes(buf))
         except (nacl.exceptions.CryptoError, ValueError):
             raise web.HTTPForbidden(text="Payload did not decrypt. Re-pair your phone.")
-        item = self.store_file("Received", name, data, meta.get("mime"), "phone")
+        item = self.store_file(self.recv_dir(sid), name, data, meta.get("mime"), "phone", sid)
         await self.publish(item)
         return web.json_response({"ok": True, "id": item["id"]})
 
     async def phone_file(self, request):
         item = self.history.get(request.match_info["id"])
-        if not item or item["kind"] != "file":
+        if not item or item["kind"] != "file" or item.get("session") != request["sid"]:
             raise web.HTTPNotFound()
         path = FILES_DIR / item["path"]
         if not path.exists():
@@ -400,7 +487,7 @@ class Tonefer:
             raise web.HTTPRequestEntityTooLarge(MAX_FILE, path.stat().st_size,
                                                 text="Update Tonefer on your phone to receive files this big.")
         data = await asyncio.to_thread(path.read_bytes)
-        sealed = await asyncio.to_thread(self.vault.seal, data)
+        sealed = await asyncio.to_thread(request["key"].seal, data)
         return await self.stream_out(request, sealed, item["name"])
 
     async def stream_out(self, request, payload, label: str, total: int | None = None):
@@ -434,9 +521,9 @@ class Tonefer:
         return web.json_response({"ok": True, "bps": bps})
 
     # ---- big transfers (protocol v2) ------------------------------------ #
-    def _meta(self, raw: str) -> dict:
+    def _meta(self, request, raw: str) -> dict:
         try:
-            meta = self.vault.open_json(raw.strip())
+            meta = request["key"].open_json(raw.strip())
         except (nacl.exceptions.CryptoError, ValueError, TypeError):
             raise web.HTTPForbidden(text="Payload did not decrypt. Re-pair your phone.")
         if not isinstance(meta, dict):
@@ -463,9 +550,10 @@ class Tonefer:
         await resp.prepare(request)
         meter = Meter(self, "out", max(size - start * tx.DCHUNK, 0), item["name"])
         tid = item["id"]
+        key = request["key"]
 
         def frame(fh, i: int) -> bytes:
-            sealed = self.vault.seal(tx.header(tid, i, i == frames - 1) + fh.read(tx.DCHUNK))
+            sealed = key.seal(tx.header(tid, i, i == frames - 1) + fh.read(tx.DCHUNK))
             return struct.pack(">I", len(sealed)) + sealed
 
         with open(path, "rb") as fh:
@@ -479,16 +567,17 @@ class Tonefer:
         return resp
 
     async def phone_zip_start(self, request):
-        meta = self._meta(await request.text())
+        meta = self._meta(request, await request.text())
         zid = tx.new_id()
         z = await asyncio.to_thread(tx.ZipBuild, zid, str(meta.get("name") or "Tonefer"), "phone", PARTIAL,
                                     self._int(meta.get("files"), 0), self._int(meta.get("size")))
         z.meter = Meter(self, "in", max(z.expected_size, 0), z.name)
+        z.sid = request["sid"]
         self.zips[zid] = z
         return web.json_response({"zip": zid, "name": z.name})
 
     async def phone_upload_start(self, request):
-        meta = self._meta(await request.text())
+        meta = self._meta(request, await request.text())
         name = safe_name(str(meta.get("name") or "file"))
         size = self._int(meta.get("size"))
         mime = str(meta.get("mime") or "") or mimetypes.guess_type(name)[0] or "application/octet-stream"
@@ -496,7 +585,7 @@ class Tonefer:
         zid = meta.get("zip")
         if zid:
             z = self.zips.get(str(zid))
-            if z is None or z.zf is None:
+            if z is None or z.zf is None or z.sid != request["sid"]:
                 raise web.HTTPNotFound(text="That zip is no longer open. Send the folder again.")
             async with z.lock:
                 busy = self.uploads.get(z.owner or "")
@@ -513,19 +602,20 @@ class Tonefer:
             inc = tx.Incoming(tid, name, mime, size, "phone", tmp=tmp)
             inc.fh = await asyncio.to_thread(open, tmp, "wb")
             inc.meter = Meter(self, "in", max(size, 0), name)
+        inc.sid = request["sid"]
         self.uploads[tid] = inc
         return web.json_response({"id": tid, "chunk": tx.CHUNK, "next": 0})
 
     async def phone_upload_state(self, request):
         inc = self.uploads.get(request.match_info["tid"])
-        if inc is None:
+        if inc is None or inc.sid != request["sid"]:
             raise web.HTTPNotFound(text="Unknown transfer")
         return web.json_response({"next": inc.next, "done": inc.done, "bytes": inc.bytes})
 
     async def phone_upload_chunk(self, request):
         tid = request.match_info["tid"]
         inc = self.uploads.get(tid)
-        if inc is None:
+        if inc is None or inc.sid != request["sid"]:
             raise web.HTTPNotFound(text="Unknown transfer. Send the file again.")
         index = self._int(request.match_info["index"])
         limit = tx.CHUNK + 4096
@@ -547,7 +637,7 @@ class Tonefer:
             if index > inc.next or inc.done:
                 return web.json_response({"ok": False, "next": inc.next, "done": inc.done}, status=409)
             try:
-                plain = await asyncio.to_thread(self.vault.open, bytes(buf))
+                plain = await asyncio.to_thread(request["key"].open, bytes(buf))
             except (nacl.exceptions.CryptoError, ValueError):
                 raise web.HTTPForbidden(text="Payload did not decrypt. Re-pair your phone.")
             ctid, cindex, last, data = tx.parse(plain)
@@ -562,34 +652,34 @@ class Tonefer:
                 result["done"] = True
                 if inc.zip is None:
                     await inc.meter.finish()
-                    item = await asyncio.to_thread(self.finish_file, inc, "Received")
+                    item = await asyncio.to_thread(self.finish_file, inc, self.recv_dir(inc.sid))
                     await self.publish(item)
                     result["item"] = item["id"]
             return web.json_response(result)
 
-    def finish_file(self, inc: tx.Incoming, folder: str) -> dict:
-        dest = unique_path(FILES_DIR / folder, safe_name(inc.name))
+    def finish_file(self, inc: tx.Incoming, folder: Path) -> dict:
+        dest = unique_path(folder, safe_name(inc.name))
         shutil.move(str(inc.tmp), dest)
         return new_item("file", inc.origin, name=dest.name, size=dest.stat().st_size, mime=inc.mime,
-                        path=str(dest.relative_to(FILES_DIR)))
+                        path=self.rel(dest), **self.tag(inc.sid))
 
-    async def finish_zip(self, z: tx.ZipBuild, folder: str) -> dict:
+    async def finish_zip(self, z: tx.ZipBuild, folder: Path) -> dict:
         tmp = await asyncio.to_thread(z.finish)
         z.zf = None
-        dest = unique_path(FILES_DIR / folder, z.name)
+        dest = unique_path(folder, z.name)
         await asyncio.to_thread(shutil.move, str(tmp), dest)
         if z.meter is not None:
             await z.meter.finish()
         item = new_item("file", z.origin, name=dest.name, size=dest.stat().st_size, mime="application/zip",
-                        path=str(dest.relative_to(FILES_DIR)), files=z.count)
+                        path=self.rel(dest), files=z.count, **self.tag(z.sid))
         z.item = item["id"]
         await self.publish(item)
         return item
 
     async def phone_zip_finish(self, request):
-        self._meta(await request.text())  # proves the sender has the key
+        self._meta(request, await request.text())  # proves the sender has the key
         z = self.zips.get(request.match_info["zid"])
-        if z is None:
+        if z is None or z.sid != request["sid"]:
             raise web.HTTPNotFound(text="That zip is no longer open. Send the folder again.")
         async with z.lock:
             if getattr(z, "item", None):  # already finished (a retry)
@@ -597,20 +687,28 @@ class Tonefer:
             busy = self.uploads.get(z.owner or "")
             if busy is not None and not busy.done:
                 return web.json_response({"ok": False, "busy": busy.id, "next": busy.next}, status=409)
-            item = await self.finish_zip(z, "Received")
+            item = await self.finish_zip(z, self.recv_dir(z.sid))
         for tid in [t for t, inc in self.uploads.items() if inc.zip is z]:
             self.uploads.pop(tid, None)
         return web.json_response({"ok": True, "item": item["id"]})
 
     async def phone_upload_cancel(self, request):
-        inc = self.uploads.pop(request.match_info["tid"], None)
+        inc = self.uploads.get(request.match_info["tid"])
+        if inc is not None and inc.sid != request["sid"]:
+            inc = None
+        else:
+            self.uploads.pop(request.match_info["tid"], None)
         if inc is not None and inc.zip is None and not inc.done:
             await asyncio.to_thread(inc.abort)
             await inc.meter.finish()
         return web.json_response({"ok": True})
 
     async def phone_zip_cancel(self, request):
-        z = self.zips.pop(request.match_info["zid"], None)
+        z = self.zips.get(request.match_info["zid"])
+        if z is not None and z.sid != request["sid"]:
+            z = None
+        else:
+            self.zips.pop(request.match_info["zid"], None)
         if z is not None and z.zf is not None:
             for tid in [t for t, inc in self.uploads.items() if inc.zip is z]:
                 self.uploads.pop(tid, None)
@@ -623,6 +721,8 @@ class Tonefer:
         """Drops transfers the phone walked away from, so half files don't pile up."""
         while True:
             await asyncio.sleep(60)
+            for g in [g for g in self.guests.values() if g.expires <= time.time()]:
+                await self.end_guest(g.id)
             now = time.monotonic()
             for tid, inc in list(self.uploads.items()):
                 age = now - inc.last_seen
@@ -646,7 +746,7 @@ class Tonefer:
         await ws.prepare(request)
         self.desks.add(ws)
         await ws.send_str(json.dumps({"type": "hello", "host": platform.node(),
-                                      "items": self.history.public_list(),
+                                      "items": self.history.public_list(), "guests": self.guest_list(),
                                       "phones": len(self.phones), "version": VERSION}))
         try:
             async for _ in ws:
@@ -660,8 +760,12 @@ class Tonefer:
         text = str(body.get("text", ""))[:100_000]
         if not text.strip():
             raise web.HTTPBadRequest(text="Empty message")
-        item = await self.publish(new_item("text", "laptop", text=text))
+        item = await self.publish(new_item("text", "laptop", text=text, **self.tag(self.target(body.get("to")))))
         return web.json_response(History.public(item))
+
+    def target(self, to) -> str | None:
+        """Which session a laptop → phone item is for: a guest id, or None for your own phone."""
+        return to if to and to in self.guests else None
 
     async def desk_upload(self, request):
         """Laptop → phone. Streams straight to disk (no size limit). With ?zip=Name, every file
@@ -669,6 +773,9 @@ class Tonefer:
         reader = await request.multipart()
         zname = request.query.get("zip")
         z = await asyncio.to_thread(tx.ZipBuild, tx.new_id(), zname, "laptop", PARTIAL) if zname else None
+        to = self.target(request.query.get("to"))
+        if z is not None:
+            z.sid = to
         sent: list[dict] = []
         fields: dict[str, str] = {}
         try:
@@ -696,14 +803,14 @@ class Tonefer:
                     if not mime or mime == "application/octet-stream":
                         mime = mimetypes.guess_type(name)[0] or "application/octet-stream"
                     item = new_item("file", "laptop", name=dest.name, size=dest.stat().st_size, mime=mime,
-                                    path=str(dest.relative_to(FILES_DIR)))
+                                    path=self.rel(dest), **self.tag(to))
                     await self.publish(item)
                     sent.append(History.public(item))
                 fields = {}
             if z is not None:
                 if z.count == 0:
                     raise web.HTTPBadRequest(text="Nothing to zip")
-                sent.append(History.public(await self.finish_zip(z, "Sent")))
+                sent.append(History.public(await self.finish_zip(z, FILES_DIR / "Sent")))
         except BaseException:
             if z is not None and z.zf is not None:
                 await asyncio.to_thread(z.abort)
@@ -750,9 +857,104 @@ class Tonefer:
             raise web.HTTPBadRequest(text=f"Couldn't zip {src.name}: {e}")
         await self.desk_send({"type": "zipping", "id": pid, "name": name, "finished": True})
         item = new_item("file", "laptop", name=dest.name, size=dest.stat().st_size, mime="application/zip",
-                        path=str(dest.relative_to(FILES_DIR)), files=count)
+                        path=self.rel(dest), files=count, **self.tag(self.target((body or {}).get("to"))))
         await self.publish(item)
         return web.json_response(History.public(item))
+
+    # ---- guest sessions --------------------------------------------------- #
+    def guest_qr(self, g: Guest, ip: str) -> dict:
+        url = f"http://{ip}:{PORT}/#k={g.key_b64}" if ip else ""
+        svg = ""
+        if url:
+            img = qrcode.make(url, image_factory=qrcode.image.svg.SvgPathImage, box_size=10, border=1)
+            svg = img.to_string(encoding="unicode")
+        return {"id": g.id, "name": g.name, "expires": int(g.expires * 1000), "url": url, "svg": svg,
+                "online": list(self.phones.values()).count(g.id)}
+
+    async def desk_guest_start(self, request):
+        body = await request.json() if request.can_read_body else {}
+        name = " ".join(str((body or {}).get("name") or "").split())[:30] or f"Guest {len(self.guests) + 1}"
+        g = Guest(name)
+        self.guests[g.id] = g
+        self.save_guests()
+        await self.announce_presence()
+        return await self.desk_guest_show(request, g.id)
+
+    async def desk_guest_show(self, request, gid: str | None = None):
+        g = self.guests.get(gid or request.match_info["id"])
+        if g is None:
+            raise web.HTTPNotFound(text="That guest session has ended.")
+        ips = [d["ip"] for d in await asyncio.to_thread(netinfo.addresses)]
+        chosen = request.query.get("ip")
+        if chosen not in ips:
+            chosen = ips[0] if ips else ""
+        return web.json_response(self.guest_qr(g, chosen))
+
+    async def end_guest(self, gid: str) -> None:
+        if self.guests.pop(gid, None) is None:
+            return
+        self.save_guests()
+        for ws, s in list(self.phones.items()):
+            if s == gid:
+                self.phones.pop(ws, None)
+                await ws.close(code=4001, message=b"session ended")
+        await self.announce_presence()
+
+    async def desk_guest_end(self, request):
+        await self.end_guest(request.match_info["id"])
+        return web.json_response({"ok": True})
+
+    # ---- where received files are saved ----------------------------------- #
+    def save_info(self) -> dict:
+        return {"dir": str(self.recv_dir()), "custom": bool(self.config.get("received_dir")),
+                "ask": bool(self.config.get("ask_save", False))}
+
+    async def desk_save_get(self, request):
+        return web.json_response(self.save_info())
+
+    async def desk_save_set(self, request):
+        body = await request.json()
+        if "ask" in body:
+            self.config.set(ask_save=bool(body["ask"]))
+        if body.get("reset"):
+            self.config.set(received_dir="")
+        path = body.get("dir")
+        if body.get("pick"):
+            path = await asyncio.to_thread(tx.pick_folder, "Choose where Tonefer saves what your phone sends")
+            if path is None:
+                return web.json_response({**self.save_info(), "picker": False}, status=501)
+        if path:
+            dest = Path(path).expanduser()
+            if not dest.is_dir() or not os.access(dest, os.W_OK):
+                raise web.HTTPBadRequest(text="Tonefer can't write to that folder.")
+            self.config.set(received_dir=str(dest))
+        return web.json_response(self.save_info())
+
+    async def desk_move(self, request):
+        """Moves one received file to a folder you pick (the "ask where to save" flow)."""
+        item = self.history.get(request.match_info["id"])
+        if not item or item["kind"] != "file":
+            raise web.HTTPNotFound()
+        src = FILES_DIR / item["path"]
+        if not src.exists():
+            raise web.HTTPGone(text="The file was moved or deleted.")
+        body = await request.json() if request.can_read_body else {}
+        path = (body or {}).get("dir")
+        if not path:
+            path = await asyncio.to_thread(tx.pick_folder, f"Save {item['name']} to…")
+            if path is None:
+                return web.json_response({"picker": False}, status=501)
+            if not path:
+                return web.json_response({"cancelled": True})
+        folder = Path(path).expanduser()
+        if not folder.is_dir() or not os.access(folder, os.W_OK):
+            raise web.HTTPBadRequest(text="Tonefer can't write to that folder.")
+        dest = unique_path(folder, src.name)
+        await asyncio.to_thread(shutil.move, str(src), dest)
+        item["path"] = self.rel(dest)
+        item["name"] = dest.name
+        self.history.save()
+        return web.json_response({"ok": True, "dir": str(folder), "name": dest.name})
 
     async def desk_extract(self, request):
         item = self.history.get(request.match_info["id"])
@@ -805,16 +1007,8 @@ class Tonefer:
     async def desk_speedtest(self, request):
         if not self.phones:
             raise web.HTTPConflict(text="Connect a phone first.")
-        await self.broadcast_phones({"type": "speedtest", "bytes": SPEEDTEST_BYTES})
+        await self.to_phones({"type": "speedtest", "bytes": SPEEDTEST_BYTES}, None)
         return web.json_response({"ok": True, "bytes": SPEEDTEST_BYTES})
-
-    async def broadcast_phones(self, event: dict) -> None:
-        sealed = self.vault.seal_json(event)
-        for ws in list(self.phones):
-            try:
-                await ws.send_str(sealed)
-            except Exception:
-                self.phones.discard(ws)
 
     async def desk_hotspot_get(self, request):
         saved = await asyncio.to_thread(netinfo.saved_wifi)
@@ -860,6 +1054,8 @@ class Tonefer:
         for ws in list(self.phones):
             await ws.close(code=4001, message=b"unpaired")
         self.phones.clear()
+        self.guests.clear()
+        self.save_guests()
         await self.announce_presence()
         return web.json_response({"ok": True})
 
@@ -911,6 +1107,12 @@ class Tonefer:
         r.add_post("/desk/api/open-folder", self.desk_open_folder)
         r.add_post("/desk/api/send-folder", self.desk_send_folder)
         r.add_post("/desk/api/extract/{id}", self.desk_extract)
+        r.add_post("/desk/api/guest", self.desk_guest_start)
+        r.add_get("/desk/api/guest/{id}", self.desk_guest_show)
+        r.add_post("/desk/api/guest/{id}/end", self.desk_guest_end)
+        r.add_get("/desk/api/save-location", self.desk_save_get)
+        r.add_post("/desk/api/save-location", self.desk_save_set)
+        r.add_post("/desk/api/move/{id}", self.desk_move)
         r.add_static("/static", WEB / "static")
 
         async def start_watcher(_app):

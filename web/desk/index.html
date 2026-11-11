@@ -210,6 +210,18 @@
         </div>
       </section>
 
+      <section class="win" id="guestCard">
+        <div class="titlebar"><span class="box" style="background:var(--sun)"></span><span class="title">Guest sessions</span></div>
+        <div class="content">
+          <p class="small">Let a friend send to this laptop. They scan their own code, see only their own transfers, and are cut off when you end the session.</p>
+          <div id="guestList"></div>
+          <form class="guest-new" id="guestForm">
+            <input id="guestName" maxlength="30" placeholder="Friend's name" autocomplete="off">
+            <button class="btn" type="submit">Start session</button>
+          </form>
+        </div>
+      </section>
+
       <section class="win" id="speedCard">
         <div class="titlebar"><span class="box" style="background:var(--teal)"></span><span class="title">Transfer speed</span></div>
         <div class="content">
@@ -250,6 +262,12 @@
       <section class="win tools">
         <div class="titlebar"><span class="box"></span><span class="title">Tools</span></div>
         <div class="content">
+          <div class="save-loc">
+            <div class="label">Phone files are saved to</div>
+            <div class="path" id="savePath" title=""></div>
+            <div class="row"><button class="btn ghost" id="saveChange">Change folder</button><button class="btn ghost" id="saveReset" hidden>Reset</button></div>
+            <label class="check"><input type="checkbox" id="saveAsk"> Ask where to save each file</label>
+          </div>
           <button class="btn ghost" id="folder"></button>
           <button class="btn ghost danger" id="repair"></button>
           <button class="btn ghost danger" id="clear"></button>
@@ -265,8 +283,11 @@
       </div>
 
       <div class="pane" id="paneTransfers">
+        <div class="searchbar"><input id="search" type="search" placeholder="Search notes and file names…" autocomplete="off"></div>
         <div class="scroll" id="scroll"><div class="timeline" id="timeline"></div></div>
+        <div class="asks" id="asks"></div>
         <div class="uploads" id="uploads"></div>
+        <div class="sendto" id="sendTo" hidden><span>Send to</span><select id="toSel"></select></div>
         <form class="composer" id="composer">
           <div class="attach-wrap">
             <button type="button" class="round" id="attach" title="Send files or a folder" aria-haspopup="menu"></button>
@@ -352,6 +373,9 @@
               <tr><td>Send several files as one</td><td><kbd>+</kbd> → <i>Files as one zip</i></td></tr>
               <tr><td>Unzip what the phone sent</td><td>Click the box icon on a zip. It unpacks next to it and opens the folder</td></tr>
               <tr><td>Big files</td><td>No size limit. Files move in small encrypted pieces, so a 5 GB video is fine</td></tr>
+              <tr><td>Let a friend send to you</td><td><i>Guest sessions</i> → type their name → <i>Start session</i>. They scan the code with their phone camera. They only see their own transfers; <i>End session</i> cuts them off</td></tr>
+              <tr><td>Choose where files are saved</td><td>Tools → <i>Change folder</i>, or tick <i>Ask where to save each file</i></td></tr>
+              <tr><td>Find something old</td><td>Type in the search box above the history</td></tr>
               <tr><td>Copy a received note</td><td>Click the copy icon on the message</td></tr>
               <tr><td>Open or save a photo</td><td>Click it, then <i>Save</i></td></tr>
               <tr><td>Find received files</td><td>Tools → <i>Open Tonefer folder</i> (<code>~/Tonefer/Received</code>)</td></tr>

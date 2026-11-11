@@ -111,7 +111,7 @@
     const el = document.createElement("div");
     el.className = "card" + (mine ? " mine" : "");
     el.dataset.id = item.id;
-    const who = mine ? "you" : opts.peerLabel;
+    const who = (opts.who && opts.who(item)) || (mine ? "you" : opts.peerLabel);
     const isImage = item.kind === "file" && /^image\//.test(item.mime || "") && !/svg/.test(item.mime);
 
     let body = "";
