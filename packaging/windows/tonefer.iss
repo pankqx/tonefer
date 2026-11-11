@@ -46,8 +46,15 @@ Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""Tonefer"" dir=in action=allow program=""{app}\Tonefer.exe"" enable=yes profile=private,public"; Flags: runhidden
 Filename: "{app}\Tonefer.exe"; Description: "Open Tonefer now"; Flags: nowait postinstall skipifsilent
 ; After a one-click update (silent install) reopen Tonefer by itself.
-Filename: "{app}\Tonefer.exe"; Flags: nowait; Check: WizardSilent
+Filename: "{app}\Tonefer.exe"; Flags: nowait; Check: Relaunch
 
 [UninstallRun]
 Filename: "{sys}\taskkill.exe"; Parameters: "/IM Tonefer.exe /F"; Flags: runhidden; RunOnceId: "StopTonefer"
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Tonefer"""; Flags: runhidden; RunOnceId: "RemoveFirewallRule"
+
+[Code]
+// The in-app updater runs the installer with /RELAUNCH=1 so Tonefer reopens afterwards.
+function Relaunch: Boolean;
+begin
+  Result := ExpandConstant('{param:RELAUNCH|0}') = '1';
+end;

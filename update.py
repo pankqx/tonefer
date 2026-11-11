@@ -111,7 +111,7 @@ def git_pull() -> tuple[bool, str]:
 
 def run_windows_installer(path: Path) -> None:
     flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-    subprocess.Popen([str(path), "/SILENT", "/CLOSEAPPLICATIONS", "/NORESTART"], creationflags=flags, close_fds=True)
+    subprocess.Popen([str(path), "/SILENT", "/CLOSEAPPLICATIONS", "/NORESTART", "/RELAUNCH=1"], creationflags=flags, close_fds=True)
 
 
 def restart() -> None:
