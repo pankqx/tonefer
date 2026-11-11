@@ -73,7 +73,7 @@ jobs:
           python packaging/windows/make_icon.py
           pyinstaller --noconfirm --windowed --name Tonefer --icon build/tonefer.ico `
             --paths . --add-data "web;web" --add-data "VERSION;." `
-            --hidden-import netinfo --hidden-import transfer --hidden-import pystray._win32 --hidden-import _cffi_backend `
+            --hidden-import netinfo --hidden-import transfer --hidden-import update --hidden-import pystray._win32 --hidden-import _cffi_backend `
             --collect-all nacl --collect-submodules qrcode --collect-submodules aiohttp `
             desktop/tonefer_win.py
           Get-ChildItem dist\Tonefer | Select-Object -First 5

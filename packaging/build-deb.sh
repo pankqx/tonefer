@@ -8,7 +8,7 @@ rm -rf "$PKG" && mkdir -p "$PKG/DEBIAN" "$ROOT/dist"
 
 # App files
 install -d "$PKG/opt/tonefer/desktop"
-cp "$ROOT/server.py" "$ROOT/netinfo.py" "$ROOT/transfer.py" "$ROOT/VERSION" "$PKG/opt/tonefer/"
+cp "$ROOT/server.py" "$ROOT/netinfo.py" "$ROOT/transfer.py" "$ROOT/update.py" "$ROOT/VERSION" "$PKG/opt/tonefer/"
 cp -r "$ROOT/web" "$PKG/opt/tonefer/"
 cp "$ROOT/desktop/tonefer_app.py" "$PKG/opt/tonefer/desktop/"
 find "$PKG/opt/tonefer" -name __pycache__ -prune -exec rm -rf {} +

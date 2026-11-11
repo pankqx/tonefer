@@ -45,6 +45,8 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Tonefer"""; Flags: runhidden
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""Tonefer"" dir=in action=allow program=""{app}\Tonefer.exe"" enable=yes profile=private,public"; Flags: runhidden
 Filename: "{app}\Tonefer.exe"; Description: "Open Tonefer now"; Flags: nowait postinstall skipifsilent
+; After a one-click update (silent install) reopen Tonefer by itself.
+Filename: "{app}\Tonefer.exe"; Flags: nowait; Check: WizardSilent
 
 [UninstallRun]
 Filename: "{sys}\taskkill.exe"; Parameters: "/IM Tonefer.exe /F"; Flags: runhidden; RunOnceId: "StopTonefer"

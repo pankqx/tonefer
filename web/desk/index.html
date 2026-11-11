@@ -268,6 +268,12 @@
             <div class="row"><button class="btn ghost" id="saveChange">Change folder</button><button class="btn ghost" id="saveReset" hidden>Reset</button></div>
             <label class="check"><input type="checkbox" id="saveAsk"> Ask where to save each file</label>
           </div>
+          <div class="save-loc">
+            <div class="label">Version</div>
+            <div class="path" id="verText"></div>
+            <div class="row"><button class="btn ghost" id="verCheck">Check for updates</button><button class="btn" id="verGo" hidden>Update now</button></div>
+            <label class="check"><input type="checkbox" id="verAuto"> Check automatically</label>
+          </div>
           <button class="btn ghost" id="folder"></button>
           <button class="btn ghost danger" id="repair"></button>
           <button class="btn ghost danger" id="clear"></button>
@@ -283,6 +289,7 @@
       </div>
 
       <div class="pane" id="paneTransfers">
+        <div class="updatebar" id="updateBar" hidden><span id="updateMsg"></span><button class="btn" id="updateGo">Update now</button><button class="btn ghost" id="updateLater">Later</button></div>
         <div class="searchbar"><input id="search" type="search" placeholder="Search notes and file names…" autocomplete="off"></div>
         <div class="scroll" id="scroll"><div class="timeline" id="timeline"></div></div>
         <div class="asks" id="asks"></div>

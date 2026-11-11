@@ -36,6 +36,7 @@ import netinfo
 import qrcode
 import qrcode.image.svg
 import transfer as tx
+import update as up
 from aiohttp import WSMsgType, web
 
 def _read_version() -> str:
@@ -291,6 +292,8 @@ class Tonefer:
         self.config = Config(APP_DIR / "config.json")
         self.hotspot_status = ""
         self.downloads = 0   # laptop → phone streams in flight
+        self.latest: str | None = None   # newest published version, once checked
+        self.updating = False
         self.uploads: dict[str, tx.Incoming] = {}
         self.zips: dict[str, tx.ZipBuild] = {}
         shutil.rmtree(PARTIAL, ignore_errors=True)  # leftovers from a crash
@@ -793,6 +796,7 @@ class Tonefer:
         self.desks.add(ws)
         await ws.send_str(json.dumps({"type": "hello", "host": platform.node(),
                                       "items": self.history.public_list(), "guests": self.guest_list(),
+                                      "update": self.update_info(),
                                       "phones": len(self.phones), "version": VERSION}))
         try:
             async for _ in ws:
@@ -906,6 +910,93 @@ class Tonefer:
                         path=self.rel(dest), files=count, **self.tag(self.target((body or {}).get("to"))))
         await self.publish(item)
         return web.json_response(History.public(item))
+
+    # ---- updates ---------------------------------------------------------- #
+    def update_info(self) -> dict:
+        return {"current": VERSION, "latest": self.latest, "available": up.newer(self.latest, VERSION),
+                "kind": up.kind(), "auto": bool(self.config.get("update_check", True)), "busy": self.updating}
+
+    async def check_update(self) -> dict:
+        latest = await asyncio.to_thread(up.latest_version)
+        if latest:
+            self.latest = latest
+        info = self.update_info()
+        info["online"] = latest is not None
+        await self.desk_send({"type": "update", **info})
+        return info
+
+    async def update_watcher(self) -> None:
+        """Looks for a new version shortly after start and twice a day, if allowed."""
+        await asyncio.sleep(20)
+        while True:
+            if self.config.get("update_check", True):
+                try:
+                    await self.check_update()
+                except Exception:
+                    pass
+            await asyncio.sleep(12 * 3600)
+
+    async def desk_update_get(self, request):
+        if request.query.get("check"):
+            return web.json_response(await self.check_update())
+        return web.json_response(self.update_info())
+
+    async def desk_update_set(self, request):
+        body = await request.json()
+        self.config.set(update_check=bool(body.get("auto")))
+        return web.json_response(self.update_info())
+
+    async def desk_update_run(self, request):
+        """Downloads the new version, installs it over this one and restarts."""
+        if self.updating:
+            raise web.HTTPConflict(text="An update is already running.")
+        if any(not i.done for i in self.uploads.values()) or self.downloads:
+            raise web.HTTPConflict(text="A transfer is in progress. Update when it has finished.")
+        info = await self.check_update()
+        if not info["available"]:
+            raise web.HTTPBadRequest(text="You already have the newest version." if info.get("online")
+                                     else "Can't reach GitHub. Connect the laptop to the internet and try again.")
+        kind = info["kind"]
+        if kind == "manual":
+            raise web.HTTPBadRequest(text="This copy wasn't installed from the app package. Download the new version from GitHub.")
+        self.updating = True
+        loop = asyncio.get_running_loop()
+
+        def say(stage: str, **extra) -> None:
+            event = {"type": "updating", "stage": stage, "version": self.latest, **extra}
+            loop.call_soon_threadsafe(lambda: asyncio.ensure_future(self.desk_send(event)))
+
+        try:
+            folder = APP_DIR / "update"
+            if kind == "git":
+                ok, msg = await asyncio.to_thread(up.git_pull)
+            else:
+                url, name = (up.EXE_URL, "ToneferSetup.exe") if kind == "windows" else (up.DEB_URL, "tonefer.deb")
+                say("download", done=0, total=0)
+                await asyncio.to_thread(up.download, url, folder / name, lambda d, t: say("download", done=d, total=t))
+                say("install")
+                if kind == "windows":
+                    await asyncio.to_thread(up.run_windows_installer, folder / name)
+                    ok, msg = True, "Installing"
+                else:
+                    ok, msg = await asyncio.to_thread(up.install_deb, folder / name)
+            if not ok:
+                say("failed", message=msg)
+                raise web.HTTPBadRequest(text=msg)
+            say("restart")
+            await asyncio.sleep(0.8)
+            if kind == "windows":
+                loop.call_later(0.5, os._exit, 0)   # the installer replaces the files and reopens Tonefer
+            else:
+                loop.call_later(0.5, up.restart)
+            return web.json_response({"ok": True, "version": self.latest})
+        except web.HTTPException:
+            raise
+        except Exception as e:
+            say("failed", message=str(e))
+            raise web.HTTPBadRequest(text=f"Update failed: {e}")
+        finally:
+            self.updating = False
 
     # ---- guest sessions --------------------------------------------------- #
     def guest_qr(self, g: Guest, ip: str) -> dict:
@@ -1153,6 +1244,9 @@ class Tonefer:
         r.add_post("/desk/api/open-folder", self.desk_open_folder)
         r.add_post("/desk/api/send-folder", self.desk_send_folder)
         r.add_post("/desk/api/extract/{id}", self.desk_extract)
+        r.add_get("/desk/api/update", self.desk_update_get)
+        r.add_post("/desk/api/update", self.desk_update_run)
+        r.add_post("/desk/api/update/auto", self.desk_update_set)
         r.add_post("/desk/api/guest", self.desk_guest_start)
         r.add_get("/desk/api/guest/{id}", self.desk_guest_show)
         r.add_post("/desk/api/guest/{id}/end", self.desk_guest_end)
@@ -1165,11 +1259,13 @@ class Tonefer:
             _app["watcher"] = asyncio.create_task(self.hotspot_watcher())
             _app["janitor"] = asyncio.create_task(self.janitor())
             _app["awake"] = asyncio.create_task(self.stay_awake())
+            _app["updates"] = asyncio.create_task(self.update_watcher())
 
         async def stop_watcher(_app):
             _app["watcher"].cancel()
             _app["janitor"].cancel()
             _app["awake"].cancel()
+            _app["updates"].cancel()
 
         app.on_startup.append(start_watcher)
         app.on_cleanup.append(stop_watcher)

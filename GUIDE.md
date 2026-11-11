@@ -233,12 +233,11 @@ The Android app (repository **tonefer-android**) adds:
 
 ## 8. Updating
 
-- **Ubuntu app:** install the newest **tonefer.deb** over the old one.
-- **Windows app:** run the newest **ToneferSetup.exe**. It replaces the old version.
-- **Android:** install the newest **tonefer.apk** over the old one.
-- **From source:** `cd ~/tonefer && git pull`
+**Laptop app.** Tonefer checks for a new version when it starts (this needs internet; turn it off under Tools → *Check automatically*). When one is out, a bar appears above the history: press **Update now**. Tonefer downloads it, Ubuntu asks for your password once, and the app restarts on the new version. Your pairing, history and files are untouched. You can also press Tools → **Check for updates** at any time.
 
-Settings, pairing and history are always kept.
+**Android app.** A banner appears on the home screen: tap **UPDATE**. The first time, Android asks you to allow Tonefer to install apps; after that it is one tap plus Android's own confirmation. No uninstalling.
+
+**Running from source.** `git pull`, then restart. The Update button does this for you.
 
 ---
 

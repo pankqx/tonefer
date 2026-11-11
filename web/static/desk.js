@@ -157,6 +157,10 @@
         T.hideLoader();
         items = m.items;
         if (m.guests) setGuests(m.guests);
+        // After a one-click update the server comes back as a new version: load the new page.
+        if (runningVersion && m.version && m.version !== runningVersion) return location.reload();
+        runningVersion = m.version || runningVersion;
+        if (m.update) showUpdate(m.update);
         $("host").textContent = m.host;
         setPresence(m.phones);
         draw();
@@ -175,6 +179,10 @@
       } else if (m.type === "rate") {
         onRate(m);
         incoming(m);
+      } else if (m.type === "update") {
+        showUpdate(m);
+      } else if (m.type === "updating") {
+        updating(m);
       } else if (m.type === "zipping") {
         zipping(m);
       } else if (m.type === "notice") {
@@ -374,6 +382,45 @@
     const files = [...(e.clipboardData?.files || [])];
     if (files.length) { e.preventDefault(); sendFiles(files); }
   });
+
+  // ---- one-click update ----
+  let runningVersion = "", dismissed = "";
+  function showUpdate(u) {
+    $("verText").textContent = u.available ? `${u.current} installed · ${u.latest} available` : `${u.current} · up to date`;
+    $("verAuto").checked = u.auto;
+    $("verGo").hidden = !u.available;
+    $("updateBar").hidden = !u.available || dismissed === u.latest;
+    $("updateMsg").textContent = `Tonefer ${u.latest} is available. You have ${u.current}.`;
+  }
+  function updating(m) {
+    const bar = $("updateBar");
+    bar.hidden = false;
+    $("updateGo").hidden = $("updateLater").hidden = m.stage !== "failed";
+    const pct = m.total ? ` ${Math.round(100 * m.done / m.total)}%` : "";
+    $("updateMsg").textContent = {
+      download: `Downloading Tonefer ${m.version}…${pct}`,
+      install: "Installing. Enter your password if Ubuntu asks for it.",
+      restart: "Installed. Restarting Tonefer…",
+      failed: m.message || "The update didn't finish.",
+    }[m.stage] || "";
+  }
+  async function runUpdate() {
+    $("updateGo").hidden = $("updateLater").hidden = true;
+    $("updateBar").hidden = false;
+    $("updateMsg").textContent = "Starting the update…";
+    const r = await fetch("/desk/api/update", { method: "POST" }).catch(() => null);
+    if (r && !r.ok) { $("updateMsg").textContent = await r.text(); $("updateGo").hidden = $("updateLater").hidden = false; }
+  }
+  $("updateGo").onclick = runUpdate;
+  $("verGo").onclick = runUpdate;
+  $("updateLater").onclick = () => { dismissed = $("updateMsg").textContent.split(" ")[1] || "x"; $("updateBar").hidden = true; };
+  $("verCheck").onclick = async () => {
+    $("verText").textContent = "Checking…";
+    const u = await (await fetch("/desk/api/update?check=1")).json();
+    showUpdate(u);
+    if (!u.online) $("verText").textContent = `${u.current} · can't reach GitHub (no internet)`;
+  };
+  $("verAuto").onchange = (e) => fetch("/desk/api/update/auto", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ auto: e.target.checked }) });
 
   // ---- guest sessions ----
   const openQr = {};   // guest id -> QR svg currently shown
