@@ -231,6 +231,21 @@ The Android app (repository **tonefer-android**) adds:
 
 ---
 
+## Gallery: your photos, videos and files
+
+The **Gallery** tab in the laptop app (Ubuntu and Windows) shows every photo, video and file in your Pictures, Videos, Downloads, Desktop, Documents and Tonefer folders, newest first and grouped by day. Use **Folders → Add a folder** for anything else, such as an external drive.
+
+- **View:** click a photo or video. Arrow keys or the scroll wheel go to the next one. Videos start playing at once; Space pauses.
+- **Delete:** press Delete in the viewer, or press **Select**, pick several (Shift-click selects a range) and **Move to Trash**. Files go to the system Trash or Recycle Bin, so they can be restored.
+- **Send:** **Send to phone** offers the file to your phone without copying it.
+- **Files** lists documents, archives and music; clicking one opens it in its normal app.
+
+Everything stays on the laptop. Thumbnails are cached in `~/.tonefer/thumbs`. Videos that the built-in player can't decode get an *Open in your video player* button; on Ubuntu, installing `gstreamer1.0-libav` lets most of them play inside Tonefer.
+
+On Android, open the menu → **Gallery** for the same timeline of the phone's photos and videos, with swipe to move, instant video and delete to the system trash.
+
+---
+
 ## 8. Updating
 
 **Laptop app.** Tonefer checks for a new version when it starts (this needs internet; turn it off under Tools → *Check automatically*). When one is out, a bar appears above the history: press **Update now**. Tonefer downloads it, Ubuntu asks for your password once, and the app restarts on the new version. Your pairing, history and files are untouched. You can also press Tools → **Check for updates** at any time.

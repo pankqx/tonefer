@@ -8,7 +8,7 @@ rm -rf "$PKG" && mkdir -p "$PKG/DEBIAN" "$ROOT/dist"
 
 # App files
 install -d "$PKG/opt/tonefer/desktop"
-cp "$ROOT/server.py" "$ROOT/netinfo.py" "$ROOT/transfer.py" "$ROOT/update.py" "$ROOT/VERSION" "$PKG/opt/tonefer/"
+cp "$ROOT/server.py" "$ROOT/netinfo.py" "$ROOT/transfer.py" "$ROOT/update.py" "$ROOT/gallery.py" "$ROOT/VERSION" "$PKG/opt/tonefer/"
 cp -r "$ROOT/web" "$PKG/opt/tonefer/"
 cp "$ROOT/desktop/tonefer_app.py" "$PKG/opt/tonefer/desktop/"
 find "$PKG/opt/tonefer" -name __pycache__ -prune -exec rm -rf {} +
@@ -78,8 +78,8 @@ Section: net
 Priority: optional
 Architecture: all
 Installed-Size: ${SIZE}
-Depends: python3 (>= 3.10), python3-aiohttp, python3-nacl, python3-qrcode, python3-psutil, python3-gi, gir1.2-gtk-3.0, gir1.2-webkit2-4.1 | gir1.2-webkit2-4.0
-Recommends: network-manager, zenity
+Depends: python3 (>= 3.10), python3-aiohttp, python3-nacl, python3-qrcode, python3-psutil, python3-pil, python3-gi, gir1.2-gtk-3.0, gir1.2-webkit2-4.1 | gir1.2-webkit2-4.0
+Recommends: network-manager, zenity, ffmpeg, gstreamer1.0-libav, gstreamer1.0-plugins-good
 Maintainer: K S Pankaj <pankqx@gmail.com>
 Homepage: https://github.com/pankqx/tonefer
 Description: Private, offline transfer between your phone and your laptop

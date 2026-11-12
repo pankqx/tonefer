@@ -153,6 +153,7 @@
     .menubar { padding: 0 14px; }
   }
 </style>
+<link rel="stylesheet" href="/static/gallery.css">
 </head>
 <body data-steps="Loading interface|Checking network|Preparing pairing code|Unlocking encryption keys|Ready">
 <div class="loader" id="loader" role="status" aria-live="polite">
@@ -174,6 +175,7 @@
   <header class="menubar">
     <span id="brand"></span>
     <button class="item" id="menuTransfers">Transfers</button>
+    <button class="item" id="menuGallery">Gallery</button>
     <button class="item" id="menuHelp">Instructions</button>
     <span class="item host" id="host"></span>
     <span class="grow"></span>
@@ -285,6 +287,7 @@
       <div class="titlebar tabs" role="tablist">
         <span class="box"></span>
         <button class="tab" role="tab" id="tabTransfers" aria-selected="true">Transfers</button>
+        <button class="tab" role="tab" id="tabGallery" aria-selected="false">Gallery</button>
         <button class="tab" role="tab" id="tabHelp" aria-selected="false">Instructions</button>
       </div>
 
@@ -312,6 +315,37 @@
         </form>
         <div class="hint"><kbd>Enter</kbd> send · drop files anywhere · <kbd>Ctrl+V</kbd> paste image · <kbd>F1</kbd> instructions</div>
         <div class="drop" id="drop"><div><div class="big">Drop to send</div><p>Folders are sent as a zip</p></div></div>
+      </div>
+
+      <div class="pane" id="paneGallery" hidden>
+        <div class="gal-bar">
+          <div class="seg" id="galKind" role="group" aria-label="Show">
+            <button data-k="media" aria-pressed="true">All<small></small></button>
+            <button data-k="photo" aria-pressed="false">Photos<small></small></button>
+            <button data-k="video" aria-pressed="false">Videos<small></small></button>
+            <button data-k="file" aria-pressed="false">Files<small></small></button>
+          </div>
+          <input id="galSearch" type="search" placeholder="Search by name or folder…" autocomplete="off" aria-label="Search the gallery">
+          <span class="small" id="galCount" style="margin:0"></span>
+          <button class="btn ghost" id="galSelect">Select</button>
+          <button class="btn ghost" id="galFolders">Folders</button>
+        </div>
+        <div class="gal-folders" id="galFolderPanel" hidden>
+          <h4>Folders in the Gallery</h4>
+          <p>Everything inside these folders is shown, sub-folders included. Nothing leaves this computer.</p>
+          <ul id="galFolderList"></ul>
+          <div class="row" style="display:flex;gap:8px"><button class="btn" id="galFolderAdd">Add a folder…</button><button class="btn ghost" id="galFolderClose">Close</button></div>
+        </div>
+        <div class="gal-scroll" id="galScroll">
+          <div id="galGrid"></div>
+          <div class="gal-empty" id="galEmpty" hidden></div>
+        </div>
+        <div class="gal-actions" id="galActions" hidden>
+          <span id="galSel"></span>
+          <button class="btn" id="galSend">Send to phone</button>
+          <button class="btn ghost danger" id="galTrash">Move to Trash</button>
+          <button class="btn ghost" id="galCancel">Cancel</button>
+        </div>
       </div>
 
       <div class="pane help" id="paneHelp" hidden>
@@ -383,6 +417,9 @@
               <tr><td>Let a friend send to you</td><td><i>Guest sessions</i> → type their name → <i>Start session</i>. They scan the code with their phone camera. They only see their own transfers; <i>End session</i> cuts them off</td></tr>
               <tr><td>Choose where files are saved</td><td>Tools → <i>Change folder</i>, or tick <i>Ask where to save each file</i></td></tr>
               <tr><td>Find something old</td><td>Type in the search box above the history</td></tr>
+              <tr><td>Browse photos, videos and files</td><td><i>Gallery</i> tab. Newest first, grouped by day. Click to view; arrow keys or the scroll wheel move to the next one; videos play at once</td></tr>
+              <tr><td>Delete from the Gallery</td><td><kbd>Delete</kbd> in the viewer, or <i>Select</i> several and <i>Move to Trash</i>. Files go to the system Trash, so you can restore them</td></tr>
+              <tr><td>Add a folder to the Gallery</td><td>Gallery → <i>Folders</i> → <i>Add a folder</i></td></tr>
               <tr><td>Copy a received note</td><td>Click the copy icon on the message</td></tr>
               <tr><td>Open or save a photo</td><td>Click it, then <i>Save</i></td></tr>
               <tr><td>Find received files</td><td>Tools → <i>Open Tonefer folder</i> (<code>~/Tonefer/Received</code>)</td></tr>
@@ -462,6 +499,20 @@
   </div>
 </div>
 
+<div class="lb" id="lb" hidden>
+  <div class="lb-top">
+    <div class="meta"><b id="lbName"></b><small id="lbInfo"></small></div>
+    <button class="lb-btn" id="lbSend">Send to phone</button>
+    <button class="lb-btn" id="lbFolder">Show in folder</button>
+    <button class="lb-btn danger" id="lbTrash">Move to Trash</button>
+    <button class="lb-btn" id="lbClose">Close</button>
+  </div>
+  <div class="lb-stage" id="lbStage">
+    <button class="lb-nav prev" id="lbPrev" aria-label="Previous">‹</button>
+    <button class="lb-nav next" id="lbNext" aria-label="Next">›</button>
+  </div>
+</div>
+
 <div class="viewer" id="viewer">
   <div>
     <img id="viewerImg" alt="">
@@ -474,5 +525,6 @@
 
 <script src="/static/common.js"></script>
 <script src="/static/desk.js"></script>
+<script src="/static/gallery.js"></script>
 </body>
 </html>

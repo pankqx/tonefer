@@ -35,6 +35,7 @@ import nacl.utils
 import netinfo
 import qrcode
 import qrcode.image.svg
+import gallery as gal
 import transfer as tx
 import update as up
 from aiohttp import WSMsgType, web
@@ -292,6 +293,8 @@ class Tonefer:
         self.config = Config(APP_DIR / "config.json")
         self.hotspot_status = ""
         self.downloads = 0   # laptop → phone streams in flight
+        self.gallery = gal.Gallery(APP_DIR, self.config)
+        self.thumb_slots = asyncio.Semaphore(4)
         self.latest: str | None = None   # newest published version, once checked
         self.updating = False
         self.uploads: dict[str, tx.Incoming] = {}
@@ -911,6 +914,91 @@ class Tonefer:
         await self.publish(item)
         return web.json_response(History.public(item))
 
+    # ---- gallery ---------------------------------------------------------- #
+    async def rescan_gallery(self) -> None:
+        await asyncio.to_thread(self.gallery.scan)
+        await self.desk_send({"type": "gallery", "scanned": int(self.gallery.scanned_at * 1000)})
+        await asyncio.to_thread(self.gallery.prune_thumbs)
+
+    async def desk_gallery(self, request):
+        g = self.gallery
+        offset = max(self._int(request.query.get("offset"), 0), 0)
+        if g.scanned_at == 0:
+            await asyncio.to_thread(g.scan)          # first open: wait for the first index
+        elif offset == 0 and not g.scanning and (request.query.get("fresh") or time.time() - g.scanned_at > 45):
+            asyncio.ensure_future(self.rescan_gallery())   # later: answer now, refresh behind
+        limit = min(max(self._int(request.query.get("limit"), 600), 1), 5000)
+        return web.json_response(g.page(request.query.get("kind", "media"), request.query.get("q", "").strip(), offset, limit))
+
+    def _entry(self, request) -> gal.Entry:
+        e = self.gallery.get(request.match_info["id"])
+        if e is None or not os.path.exists(e.path):
+            raise web.HTTPNotFound()
+        return e
+
+    async def desk_thumb(self, request):
+        e = self._entry(request)
+        async with self.thumb_slots:
+            path = await asyncio.to_thread(self.gallery.thumb, e)
+        cache = {"Cache-Control": "private, max-age=604800, immutable"}
+        if path is not None:
+            return web.FileResponse(path, headers={**cache, "Content-Type": "image/jpeg"})
+        if e.kind == "photo":
+            return web.FileResponse(e.path, headers=cache)   # no thumbnailer for this type: send the picture
+        raise web.HTTPNotFound()
+
+    async def desk_media(self, request):
+        e = self._entry(request)
+        mime = mimetypes.guess_type(e.name)[0] or "application/octet-stream"
+        # FileResponse answers byte ranges, which is what makes video start and seek instantly.
+        return web.FileResponse(e.path, headers={"Content-Type": mime, "Cache-Control": "private, max-age=3600"})
+
+    async def desk_gallery_trash(self, request):
+        ids = [str(i) for i in (await request.json()).get("ids", [])][:5000]
+        moved, failed = await asyncio.to_thread(self.gallery.trash, ids)
+        return web.json_response({"moved": moved, "failed": failed})
+
+    async def desk_gallery_open(self, request):
+        body = await request.json()
+        e = self.gallery.get(str(body.get("id")))
+        if e is None:
+            raise web.HTTPNotFound()
+        reveal(Path(os.path.dirname(e.path)) if body.get("folder") else Path(e.path))
+        return web.json_response({"ok": True})
+
+    async def desk_gallery_send(self, request):
+        """Offers gallery files to the phone straight from where they are (nothing is copied)."""
+        body = await request.json()
+        to = self.target(body.get("to"))
+        sent = 0
+        for eid in [str(i) for i in body.get("ids", [])][:500]:
+            e = self.gallery.get(eid)
+            if e is None or not os.path.exists(e.path):
+                continue
+            mime = mimetypes.guess_type(e.name)[0] or "application/octet-stream"
+            await self.publish(new_item("file", "laptop", name=e.name, size=e.size, mime=mime, path=e.path, **self.tag(to)))
+            sent += 1
+        return web.json_response({"sent": sent})
+
+    async def desk_gallery_folders(self, request):
+        g = self.gallery
+        if request.method == "POST":
+            body = await request.json()
+            if body.get("remove"):
+                g.remove_folder(str(body["remove"]))
+            path = body.get("add")
+            if body.get("pick"):
+                path = await asyncio.to_thread(tx.pick_folder, "Choose a folder to show in the Gallery")
+                if path is None:
+                    return web.json_response({"folders": g.folder_list(), "picker": False}, status=501)
+            if path:
+                p = Path(str(path)).expanduser()
+                if not p.is_dir():
+                    raise web.HTTPBadRequest(text="That isn't a folder.")
+                g.add_folder(str(p))
+            await self.rescan_gallery()
+        return web.json_response({"folders": g.folder_list()})
+
     # ---- updates ---------------------------------------------------------- #
     def update_info(self) -> dict:
         return {"current": VERSION, "latest": self.latest, "available": up.newer(self.latest, VERSION),
@@ -1244,6 +1332,14 @@ class Tonefer:
         r.add_post("/desk/api/open-folder", self.desk_open_folder)
         r.add_post("/desk/api/send-folder", self.desk_send_folder)
         r.add_post("/desk/api/extract/{id}", self.desk_extract)
+        r.add_get("/desk/api/gallery", self.desk_gallery)
+        r.add_get("/desk/thumb/{id}", self.desk_thumb)
+        r.add_get("/desk/media/{id}", self.desk_media)
+        r.add_post("/desk/api/gallery/trash", self.desk_gallery_trash)
+        r.add_post("/desk/api/gallery/open", self.desk_gallery_open)
+        r.add_post("/desk/api/gallery/send", self.desk_gallery_send)
+        r.add_get("/desk/api/gallery/folders", self.desk_gallery_folders)
+        r.add_post("/desk/api/gallery/folders", self.desk_gallery_folders)
         r.add_get("/desk/api/update", self.desk_update_get)
         r.add_post("/desk/api/update", self.desk_update_run)
         r.add_post("/desk/api/update/auto", self.desk_update_set)

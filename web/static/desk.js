@@ -179,6 +179,8 @@
       } else if (m.type === "rate") {
         onRate(m);
         incoming(m);
+      } else if (m.type === "gallery") {
+        if (window.Gallery) window.Gallery.refreshed();
       } else if (m.type === "update") {
         showUpdate(m);
       } else if (m.type === "updating") {
@@ -647,17 +649,20 @@
 
   // ---- tabs: Transfers | Instructions ----
   function showTab(name) {
-    const help = name === "help";
-    $("paneTransfers").hidden = help;
-    $("paneHelp").hidden = !help;
-    $("tabTransfers").setAttribute("aria-selected", String(!help));
-    $("tabHelp").setAttribute("aria-selected", String(help));
-    $("menuTransfers").classList.toggle("on", !help);
-    $("menuHelp").classList.toggle("on", help);
+    if (!["transfers", "gallery", "help"].includes(name)) name = "transfers";
+    const map = { transfers: ["paneTransfers", "tabTransfers", "menuTransfers"], gallery: ["paneGallery", "tabGallery", "menuGallery"], help: ["paneHelp", "tabHelp", "menuHelp"] };
+    for (const [k, [pane, tab, menu]] of Object.entries(map)) {
+      $(pane).hidden = k !== name;
+      $(tab).setAttribute("aria-selected", String(k === name));
+      $(menu).classList.toggle("on", k === name);
+    }
     try { localStorage.setItem("tonefer.tab", name); } catch (_) {}
-    if (!help) ta.focus();
+    document.body.classList.toggle("wide", name === "gallery");
+    if (name === "transfers") ta.focus();
+    if (name === "gallery" && window.Gallery) window.Gallery.show();
   }
   $("tabTransfers").onclick = $("menuTransfers").onclick = () => showTab("transfers");
+  $("tabGallery").onclick = $("menuGallery").onclick = () => showTab("gallery");
   $("tabHelp").onclick = $("menuHelp").onclick = () => showTab("help");
   window.addEventListener("keydown", (e) => {
     if (e.key === "F1") { e.preventDefault(); showTab($("paneHelp").hidden ? "help" : "transfers"); }
@@ -672,5 +677,6 @@
   layout();
   loadPair(true);
   showTab(savedTab);
+  window.addEventListener("load", () => { if (savedTab === "gallery" && window.Gallery) window.Gallery.show(); });
   ta.focus();
 })();
