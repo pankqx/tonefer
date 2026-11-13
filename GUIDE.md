@@ -250,7 +250,7 @@ On Android, open the menu → **Gallery** for the same timeline of the phone's p
 
 ## 8. Updating
 
-**Laptop app.** Tonefer checks for a new version when it starts (this needs internet; turn it off under Tools → *Check automatically*). When one is out, a bar appears above the history: press **Update now**. Tonefer downloads it, Ubuntu asks for your password once, and the app restarts on the new version. Your pairing, history and files are untouched. You can also press Tools → **Check for updates** at any time.
+**Laptop app.** Tonefer looks for a new version when it starts and every few hours (this needs internet). When it finds one, it downloads and installs it by itself as soon as nothing is being transferred, then restarts on the new version. No password is needed: updates go into your home folder (`~/.local/share/tonefer`), and the installed app hands over to the newest copy when it starts. **Tools → Check for updates** does the same on demand. To stop automatic installs, untick **Install updates automatically**. Your pairing, history and files are never touched.
 
 **Android app.** A banner appears on the home screen: tap **UPDATE**. The first time, Android asks you to allow Tonefer to install apps; after that it is one tap plus Android's own confirmation. No uninstalling.
 

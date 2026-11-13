@@ -1013,7 +1013,8 @@ class Tonefer:
     # ---- updates ---------------------------------------------------------- #
     def update_info(self) -> dict:
         return {"current": VERSION, "latest": self.latest, "available": up.newer(self.latest, VERSION),
-                "kind": up.kind(), "auto": bool(self.config.get("update_check", True)), "busy": self.updating}
+                "kind": up.kind(), "auto": bool(self.config.get("update_check", True)) and bool(self.config.get("update_auto", True)),
+                "busy": self.updating}
 
     async def check_update(self) -> dict:
         latest = await asyncio.to_thread(up.latest_version)
@@ -1049,10 +1050,17 @@ class Tonefer:
         while True:
             if self.config.get("update_check", True):
                 try:
-                    await self.check_update()
+                    info = await self.check_update()
+                    # Install by itself, as soon as nothing is being transferred.
+                    if info["available"] and self.config.get("update_auto", True) and info["kind"] in ("user", "git", "windows"):
+                        for _ in range(120):
+                            if not self.busy():
+                                break
+                            await asyncio.sleep(30)
+                        await self.run_update()
                 except Exception:
                     pass
-            await asyncio.sleep(12 * 3600)
+            await asyncio.sleep(6 * 3600)
 
     async def desk_update_get(self, request):
         if request.query.get("check"):
@@ -1061,22 +1069,31 @@ class Tonefer:
 
     async def desk_update_set(self, request):
         body = await request.json()
-        self.config.set(update_check=bool(body.get("auto")))
+        self.config.set(update_check=bool(body.get("auto")), update_auto=bool(body.get("auto")))
         return web.json_response(self.update_info())
 
     async def desk_update_run(self, request):
-        """Downloads the new version, installs it over this one and restarts."""
+        """Downloads the new version, installs it and restarts."""
+        ok, msg = await self.run_update()
+        if not ok:
+            raise web.HTTPBadRequest(text=msg)
+        return web.json_response({"ok": True, "version": self.latest})
+
+    def busy(self) -> bool:
+        return bool(self.downloads or any(not i.done for i in self.uploads.values()))
+
+    async def run_update(self) -> tuple[bool, str]:
         if self.updating:
-            raise web.HTTPConflict(text="An update is already running.")
-        if any(not i.done for i in self.uploads.values()) or self.downloads:
-            raise web.HTTPConflict(text="A transfer is in progress. Update when it has finished.")
+            return False, "An update is already running."
+        if self.busy():
+            return False, "A transfer is in progress. The update will wait until it has finished."
         info = await self.check_update()
         if not info["available"]:
-            raise web.HTTPBadRequest(text="You already have the newest version." if info.get("online")
-                                     else "Can't reach GitHub. Connect the laptop to the internet and try again.")
+            return False, ("You already have the newest version." if info.get("online")
+                           else "Can't reach GitHub. Connect the laptop to the internet and try again.")
         kind = info["kind"]
         if kind == "manual":
-            raise web.HTTPBadRequest(text="This copy wasn't installed from the app package. Download the new version from GitHub.")
+            return False, "This copy wasn't installed from the app package. Download the new version from GitHub."
         self.updating = True
         loop = asyncio.get_running_loop()
 
@@ -1097,22 +1114,20 @@ class Tonefer:
                     await asyncio.to_thread(up.run_windows_installer, folder / name)
                     ok, msg = True, "Installing"
                 else:
-                    ok, msg = await asyncio.to_thread(up.install_deb, folder / name)
+                    ok, msg = await asyncio.to_thread(up.install_user, folder / name, self.latest)
             if not ok:
                 say("failed", message=msg)
-                raise web.HTTPBadRequest(text=msg)
+                return False, msg
             say("restart")
             await asyncio.sleep(0.8)
             if kind == "windows":
                 loop.call_later(0.5, os._exit, 0)   # the installer replaces the files and reopens Tonefer
             else:
                 loop.call_later(0.5, up.restart)
-            return web.json_response({"ok": True, "version": self.latest})
-        except web.HTTPException:
-            raise
+            return True, "Restarting"
         except Exception as e:
-            say("failed", message=str(e))
-            raise web.HTTPBadRequest(text=f"Update failed: {e}")
+            say("failed", message=f"Update failed: {e}")
+            return False, f"Update failed: {e}"
         finally:
             self.updating = False
 
@@ -1425,6 +1440,14 @@ def quote(s: str) -> str:
 
 
 def main() -> None:
+    if "--selftest" in sys.argv:
+        import PIL.Image  # noqa: F401  (needed by the Gallery)
+        print(f"tonefer {VERSION} ok")
+        return
+    newer = up.newest_copy(Path(__file__).resolve().parent, VERSION)
+    if newer is not None:
+        # An update was installed into ~/.local/share/tonefer: run that instead of this copy.
+        os.execv(sys.executable, [sys.executable, str(newer)] + sys.argv[1:])
     if "--doctor" in sys.argv:
         netinfo.doctor(PORT)
         return

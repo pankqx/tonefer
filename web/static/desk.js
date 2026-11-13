@@ -401,7 +401,7 @@
     const pct = m.total ? ` ${Math.round(100 * m.done / m.total)}%` : "";
     $("updateMsg").textContent = {
       download: `Downloading Tonefer ${m.version}…${pct}`,
-      install: "Installing. Enter your password if Ubuntu asks for it.",
+      install: "Installing…",
       restart: "Installed. Restarting Tonefer…",
       failed: m.message || "The update didn't finish.",
     }[m.stage] || "";
@@ -421,6 +421,8 @@
     const u = await (await fetch("/desk/api/update?check=1")).json();
     showUpdate(u);
     if (!u.online) $("verText").textContent = `${u.current} · can't reach GitHub (no internet)`;
+    else if (u.available) runUpdate();          // found one: download and install it right away
+    else toast(`You have the newest version (${u.current})`);
   };
   $("verAuto").onchange = (e) => fetch("/desk/api/update/auto", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ auto: e.target.checked }) });
 
