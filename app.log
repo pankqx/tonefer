@@ -1,0 +1,2 @@
+
+(tonefer_app.py:5641): dbind-WARNING **: 14:52:13.089: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
