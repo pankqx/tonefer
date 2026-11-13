@@ -1,0 +1,62 @@
+installed exe: C:\Program Files\Tonefer\Tonefer.exe
+server ok: True
+
+Rule Name:                            Tonefer
+----------------------------------------------------------------------
+Enabled:                              Yes
+Direction:                            In
+Profiles:                             Private,Public
+Grouping:                             
+LocalIP:                              Any
+RemoteIP:                             Any
+Protocol:                             Any
+Edge traversal:                       No
+Action:                               Allow
+Ok.
+
+
+Name       Id
+----       --
+msedge    500
+msedge   1912
+msedge   4316
+msedge   5504
+msedge   5988
+msedge   6156
+msedge   6756
+msedge   7980
+msedge   7996
+msedge   8480
+msedge   8644
+msedge   9644
+msedge   9688
+msedge  10132
+Tonefer  6500
+
+
+
+  TCP    0.0.0.0:8765           0.0.0.0:0              LISTENING       6500
+  TCP    127.0.0.1:8765         127.0.0.1:54979        ESTABLISHED     6500
+  TCP    127.0.0.1:8765         127.0.0.1:61049        ESTABLISHED     6500
+  TCP    127.0.0.1:51435        127.0.0.1:8765         TIME_WAIT       0
+  TCP    127.0.0.1:52441        127.0.0.1:8765         TIME_WAIT       0
+  TCP    127.0.0.1:52883        127.0.0.1:8765         TIME_WAIT       0
+  TCP    127.0.0.1:53892        127.0.0.1:8765         TIME_WAIT       0
+  TCP    127.0.0.1:54362        127.0.0.1:8765         TIME_WAIT       0
+  TCP    127.0.0.1:54979        127.0.0.1:8765         ESTABLISHED     7996
+  TCP    127.0.0.1:57246        127.0.0.1:8765         TIME_WAIT       0
+  TCP    127.0.0.1:57487        127.0.0.1:8765         TIME_WAIT       0
+  TCP    127.0.0.1:61049        127.0.0.1:8765         ESTABLISHED     7996
+  TCP    127.0.0.1:62495        127.0.0.1:8765         TIME_WAIT       0
+  TCP    127.0.0.1:62847        127.0.0.1:8765         TIME_WAIT       0
+  TCP    127.0.0.1:63176        127.0.0.1:8765         TIME_WAIT       0
+
+
+Name
+----
+_internal
+Tonefer.exe
+unins000.dat
+unins000.exe
+
+
