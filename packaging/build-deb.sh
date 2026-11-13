@@ -98,6 +98,10 @@ if [ "$1" = "configure" ]; then
   if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q "Status: active"; then
     ufw allow 8765/tcp comment tonefer >/dev/null 2>&1 || true
   fi
+  # Restart Tonefer for anyone who has it running, so the new version takes over at once.
+  for u in $(loginctl list-users --no-legend 2>/dev/null | awk '{print $2}'); do
+    systemctl --user --machine="$u@" try-restart tonefer.service >/dev/null 2>&1 || true
+  done
   command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database -q /usr/share/applications || true
   command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -q /usr/share/icons/hicolor || true
 fi

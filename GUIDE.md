@@ -240,9 +240,11 @@ The **Gallery** tab in the laptop app (Ubuntu and Windows) shows every photo, vi
 - **Send:** **Send to phone** offers the file to your phone without copying it.
 - **Files** lists documents, archives and music; clicking one opens it in its normal app.
 
+Photos are placed on the day they were **taken**: Tonefer reads the date stored inside each photo (and inside phone videos), or the date in names like `IMG_20241005_143022.jpg`. The first scan reads every file once and shows a live scanner while it works; the dates are remembered in `~/.tonefer/gallery-dates.json`, so later scans take a moment.
+
 Everything stays on the laptop. Thumbnails are cached in `~/.tonefer/thumbs`. Videos that the built-in player can't decode get an *Open in your video player* button; on Ubuntu, installing `gstreamer1.0-libav` lets most of them play inside Tonefer.
 
-On Android, open the menu → **Gallery** for the same timeline of the phone's photos and videos, with swipe to move, instant video and delete to the system trash.
+On Android, open the menu → **Gallery** for the same timeline of the phone's photos and videos. Tap one to open the reels-style viewer: swipe up for the next, videos play as soon as they appear. The **Files** tab lists documents, archives, music and APKs once you allow *All files access*. Deleted items go to the system trash.
 
 ---
 

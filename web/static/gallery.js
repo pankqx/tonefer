@@ -36,7 +36,15 @@
     if (reset) { items = []; total = 0; drawn = 0; picked.clear(); lastPicked = -1; }
     try {
       const r = await fetch(`/desk/api/gallery?kind=${kind}&q=${encodeURIComponent(q)}&offset=${items.length}&limit=${PAGE}`);
-      const d = await r.json();
+      if (r.status === 404) {
+        // The pages were updated but the old program is still running: it restarts itself in a moment.
+        $("galEmpty").hidden = false;
+        $("galEmpty").innerHTML = "<b>Finishing the update…</b>Tonefer is restarting with the new version. This page reloads by itself.";
+        setTimeout(() => load(true), 4000);
+        return;
+      }
+      const d = await r.json().catch(() => ({ error: `the laptop answered ${r.status}` }));
+      if (d.error) throw new Error(d.error);
       if (mine !== stamp) return;
       if (reset) { $("galGrid").innerHTML = ""; $("galScroll").scrollTop = 0; }
       items = items.concat(d.items);
@@ -44,12 +52,18 @@
       home = d.home || home;
       loaded = true;
       counts(d.counts);
-      $("galEmpty").hidden = total > 0;
+      $("galEmpty").hidden = total > 0 || (d.progress && d.progress.scanning);
       if (!total) $("galEmpty").innerHTML = q ? "<b>Nothing found</b>No name or folder matches your search."
         : "<b>Nothing here yet</b>Add a folder with the Folders button to see its photos, videos and files.";
       draw();
       updateBar();
-    } catch (_) { toast("Couldn't load the gallery"); }
+      if (d.progress && d.progress.scanning) scanner.start(d.progress);
+    } catch (e) {
+      $("galEmpty").hidden = false;
+      $("galEmpty").innerHTML = "<b>Couldn't load the Gallery</b><span></span><br><br><button class=\"btn\" id=\"galRetry\">Try again</button>";
+      $("galEmpty").querySelector("span").textContent = e && e.message ? e.message : "The laptop didn't answer.";
+      $("galRetry").onclick = () => load(true);
+    }
     finally { loading = false; }
   }
   function counts(c) {
@@ -57,6 +71,109 @@
     const n = { media: c.photo + c.video, photo: c.photo, video: c.video, file: c.file };
     document.querySelectorAll("#galKind button").forEach((b) => { b.querySelector("small").textContent = n[b.dataset.k].toLocaleString(); });
   }
+
+  // ---------- scanning animation ----------
+  // While the laptop walks your folders and reads photo dates, a fast ASCII scanner shows what it
+  // is looking at. Full size before anything is found, a one-line strip once the grid has items.
+  const scanner = (() => {
+    const GLYPH = "<>/\\|_-=+*#%01$@&?";
+    const SPIN = "|/-\\";
+    let st = null, raf = 0, poll = 0, frame = 0, lines = [], seen = new Set(), lastPhase = "";
+    const rnd = () => GLYPH[(Math.random() * GLYPH.length) | 0];
+    const pad = (t, w) => (t.length > w ? t.slice(0, w - 1) + "…" : t + " ".repeat(w - t.length));
+    const decode = (text, age) => {
+      const k = age * 3;
+      let out = "";
+      for (let i = 0; i < text.length; i++) out += i < k ? text[i] : i < k + 7 ? rnd() : " ";
+      return out;
+    };
+    function feed(s) {
+      st = s;
+      (s.recent || []).forEach((n) => { if (!seen.has(n)) { seen.add(n); lines.push({ text: n, born: frame }); } });
+      if (lines.length > 9) lines = lines.slice(-9);
+      if (seen.size > 400) seen = new Set(lines.map((l) => l.text));
+      if (lastPhase === "walk" && s.phase === "dates" && $("galScroll").scrollTop < 40 && !picked.size) load(true);
+      lastPhase = s.phase;
+    }
+    function render() {
+      frame++;
+      const box = $("galScan");
+      if (!st) return;
+      const full = total === 0;
+      box.classList.toggle("full", full);
+      const W = full ? 60 : Math.max(30, Math.min(120, Math.floor(box.clientWidth / 7.9) - 2));
+      const where = short(st.dir || "");
+      const found = (st.found || 0).toLocaleString();
+      const pct = st.phase === "dates" && st.total ? st.done / st.total : null;
+      const bar = (w) => {
+        if (pct === null) { const p = Math.floor(frame * 0.9) % (w + 6) - 3; let b = ""; for (let i = 0; i < w; i++) b += Math.abs(i - p) < 3 ? "#" : "."; return b; }
+        const f = Math.round(pct * w); return "#".repeat(f) + (f < w ? ">" : "") + ".".repeat(Math.max(0, w - f - 1));
+      };
+      const spin = SPIN[frame % SPIN.length];
+      const what = st.phase === "dates" ? `reading dates ${st.done.toLocaleString()} / ${st.total.toLocaleString()}` : `${found} found`;
+      if (!full) {
+        const left = `${spin} ${what}  `;
+        const latest = lines.length ? lines[lines.length - 1] : null;
+        const tail = latest ? "  " + decode(latest.text, frame - latest.born) : "";
+        box.textContent = pad(left + bar(Math.max(8, Math.floor(W * 0.25))) + tail, W);
+        return;
+      }
+      const inner = W - 4;
+      const beamAt = (frame * 1.7) % (inner + 24) - 12;
+      let beam = "";
+      for (let i = 0; i < inner; i++) {
+        const d = Math.abs(i - beamAt);
+        beam += d < 1 ? "@" : d < 3 ? "#" : d < 6 ? "=" : d < 10 ? "-" : Math.random() < 0.03 ? "." : " ";
+      }
+      const rows = [
+        "+" + "-".repeat(W - 2) + "+",
+        "| " + pad(`${spin} SCANNING  ${where}`, inner) + " |",
+        "| " + beam + " |",
+        "| " + " ".repeat(inner) + " |",
+      ];
+      const shown = lines.slice(-7);
+      for (let i = 0; i < 7; i++) {
+        const l = shown[i - (7 - shown.length)];
+        const fade = l ? 6 - (shown.length - 1 - (i - (7 - shown.length))) : 0;
+        const text = l ? "> " + decode(l.text, frame - l.born) : "";
+        rows.push("| " + `<i class="f${Math.max(0, fade)}">` + esc(pad(text, inner)) + "</i>" + " |");
+      }
+      rows.push("| " + " ".repeat(inner) + " |");
+      rows.push("| " + pad(`${found} FOUND`, 14) + bar(inner - 30) + " " + pad(pct === null ? "  walking" : `  ${Math.round(pct * 100)}% dates`, 15) + " |");
+      rows.push("+" + "-".repeat(W - 2) + "+");
+      box.innerHTML = rows.map((r) => (r.includes("<i") ? r : esc(r))).join("\n");
+    }
+    const esc = (t) => t.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+    let last = 0;
+    function loop(t) {
+      if (t - last > 33) { last = t; render(); }   // about 30 frames a second
+      raf = requestAnimationFrame(loop);
+    }
+    async function tick() {
+      try {
+        const s = await (await fetch("/desk/api/gallery/status")).json();
+        feed(s);
+        if (!s.scanning) return stop(true);
+      } catch (_) {}
+      poll = setTimeout(tick, 450);
+    }
+    function start(s) {
+      if (raf) return feed(s);
+      feed(s);
+      $("galScan").hidden = false;
+      raf = requestAnimationFrame(loop);
+      poll = setTimeout(tick, 300);
+    }
+    function stop(done) {
+      cancelAnimationFrame(raf); clearTimeout(poll);
+      raf = 0; st = null; lines = []; seen = new Set(); lastPhase = "";
+      $("galScan").hidden = true;
+      if (done && $("lb").hidden && !picked.size) {
+        if ($("galScroll").scrollTop < 40) load(true); else toast("Gallery updated with photo dates");
+      }
+    }
+    return { start, stop };
+  })();
 
   // ---------- drawing (in batches, as you scroll) ----------
   function draw() {

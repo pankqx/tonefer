@@ -7,7 +7,10 @@ Everything stays on this computer. The index lives in memory, thumbnails are cac
 from __future__ import annotations
 
 import hashlib
+import json
 import os
+import re
+import struct
 import shutil
 import subprocess
 import sys
@@ -52,15 +55,106 @@ def kind_of(name: str) -> str | None:
 
 
 class Entry:
-    __slots__ = ("id", "path", "name", "t", "size", "kind")
+    __slots__ = ("id", "path", "name", "t", "m", "size", "kind")
 
-    def __init__(self, path: str, name: str, t: float, size: int, kind: str):
+    def __init__(self, path: str, name: str, mtime: float, size: int, kind: str):
         self.id = hashlib.sha1(path.encode("utf-8", "surrogatepass")).hexdigest()[:16]
-        self.path, self.name, self.t, self.size, self.kind = path, name, t, size, kind
+        self.path, self.name, self.size, self.kind = path, name, size, kind
+        self.m = mtime     # last modified: decides when the thumbnail must be remade
+        self.t = mtime     # when it was taken: replaced by the photo's own date once read
 
     def public(self) -> dict:
         return {"id": self.id, "name": self.name, "t": int(self.t * 1000), "size": self.size, "kind": self.kind,
                 "dir": os.path.dirname(self.path)}
+
+
+# ---- "when was this taken?" ------------------------------------------------ #
+_NAME_DATE = re.compile(r"(?<!\d)(20\d{2}|19\d{2})[-_.]?(0[1-9]|1[0-2])[-_.]?([0-2]\d|3[01])"
+                        r"(?:[-_ .T]?([01]\d|2[0-3])[-_.:]?([0-5]\d)[-_.:]?([0-5]\d))?(?!\d)")
+_MP4 = {"mp4", "mov", "m4v", "3gp"}
+
+
+def _plausible(t: float) -> bool:
+    return 631152000 < t < time.time() + 86400 * 2   # 1990 .. now
+
+
+def exif_date(path: str) -> float | None:
+    """DateTimeOriginal from a photo's EXIF block. Only the header is read."""
+    try:
+        from PIL import Image
+        with Image.open(path) as im:
+            ex = im.getexif()
+            raw = None
+            try:
+                raw = ex.get_ifd(0x8769).get(36867) or ex.get_ifd(0x8769).get(36868)
+            except Exception:
+                pass
+            raw = raw or ex.get(306)
+        if not raw:
+            return None
+        t = time.mktime(time.strptime(str(raw).strip()[:19], "%Y:%m:%d %H:%M:%S"))
+        return t if _plausible(t) else None
+    except Exception:
+        return None
+
+
+def mp4_date(path: str) -> float | None:
+    """Creation time stored in an MP4/MOV header (the 'mvhd' box). Reads a few hundred bytes."""
+    try:
+        with open(path, "rb") as f:
+            end = os.fstat(f.fileno()).st_size
+            pos, stop = 0, end
+            for _ in range(2000):
+                if pos + 8 > stop:
+                    return None
+                f.seek(pos)
+                size, kind = struct.unpack(">I4s", f.read(8))
+                head = 8
+                if size == 1:
+                    size = struct.unpack(">Q", f.read(8))[0]
+                    head = 16
+                elif size == 0:
+                    size = stop - pos
+                if size < head:
+                    return None
+                if kind == b"moov":
+                    pos, stop = pos + head, pos + size   # step inside
+                    continue
+                if kind == b"mvhd":
+                    version = f.read(1)[0]
+                    f.read(3)
+                    secs = struct.unpack(">Q", f.read(8))[0] if version == 1 else struct.unpack(">I", f.read(4))[0]
+                    t = secs - 2082844800   # seconds from 1904 to 1970
+                    return float(t) if _plausible(t) else None
+                pos += size
+    except Exception:
+        return None
+    return None
+
+
+def name_date(name: str) -> float | None:
+    """Phones put the date in the file name: IMG_20241005_143022.jpg, Screenshot_2024-10-05-14-30-22.png…"""
+    m = _NAME_DATE.search(name)
+    if not m:
+        return None
+    y, mo, d, hh, mm, ss = m.groups()
+    try:
+        t = time.mktime((int(y), int(mo), int(d), int(hh or 12), int(mm or 0), int(ss or 0), 0, 0, -1))
+    except (OverflowError, ValueError):
+        return None
+    return t if _plausible(t) else None
+
+
+def taken(e: "Entry") -> float | None:
+    ext = e.name.rsplit(".", 1)[-1].lower()
+    t = None
+    if e.kind == "photo" and ext in ("jpg", "jpeg", "webp", "png", "tif", "tiff", "heic", "heif", "avif"):
+        t = exif_date(e.path)
+    elif e.kind == "video" and ext in _MP4:
+        t = mp4_date(e.path)
+    if t is None and e.kind != "file":
+        t = name_date(e.name)
+    return t
 
 
 class Gallery:
@@ -72,6 +166,14 @@ class Gallery:
         self.by_id: dict[str, Entry] = {}
         self.scanning = False
         self.scanned_at = 0.0
+        self.progress: dict = {"phase": "idle"}
+        self.recent: list[str] = []          # names seen just now, for the scanning animation
+        self.dates_file = app_dir / "gallery-dates.json"
+        self.dates: dict[str, list] = {}     # path -> [mtime, size, taken or 0]
+        try:
+            self.dates = json.loads(self.dates_file.read_text("utf-8"))
+        except (OSError, ValueError):
+            self.dates = {}
         self.lock = threading.Lock()
         self.ffmpeg = shutil.which("ffmpeg")
 
@@ -108,16 +210,32 @@ class Gallery:
         self.config.set(gallery_dirs=dirs, gallery_hidden=hidden)
 
     # ---- scanning --------------------------------------------------------- #
+    def _publish(self, found: list[Entry]) -> None:
+        ordered = sorted(found, key=lambda x: x.t, reverse=True)
+        with self.lock:
+            self.entries = ordered
+            self.by_id = {e.id: e for e in ordered}
+            self.scanned_at = time.time()
+
+    def _seen(self, text: str) -> None:
+        self.recent.append(text)
+        if len(self.recent) > 14:
+            del self.recent[:-14]
+
     def scan(self) -> None:
-        """Walks the chosen folders. Fast: one stat per file, no file is opened."""
+        """Two passes. First a quick walk (one stat per file) so the grid fills at once, then the
+        date each photo and video was taken is read and remembered, so later scans are instant."""
         if self.scanning:
             return
         self.scanning = True
         try:
             found: list[Entry] = []
             stack = [str(r) for r in self.roots()]
+            last = time.monotonic()
+            self.progress = {"phase": "walk", "found": 0, "dir": ""}
             while stack:
                 d = stack.pop()
+                self.progress = {"phase": "walk", "found": len(found), "dir": d}
                 try:
                     with os.scandir(d) as it:
                         for e in it:
@@ -135,18 +253,53 @@ class Gallery:
                                 st = e.stat(follow_symlinks=False)
                                 if st.st_size == 0:
                                     continue
-                                found.append(Entry(e.path, name, st.st_mtime, st.st_size, kind))
+                                entry = Entry(e.path, name, st.st_mtime, st.st_size, kind)
+                                known = self.dates.get(e.path)
+                                if known and known[0] == int(st.st_mtime) and known[1] == st.st_size and known[2]:
+                                    entry.t = known[2]
+                                found.append(entry)
+                                if len(found) % 37 == 0:
+                                    self._seen(name)
                             except OSError:
                                 continue
                 except OSError:
                     continue
-            found.sort(key=lambda x: x.t, reverse=True)
-            with self.lock:
-                self.entries = found
-                self.by_id = {e.id: e for e in found}
-                self.scanned_at = time.time()
+                if time.monotonic() - last > 1.5 and not self.entries:
+                    last = time.monotonic()
+                    self._publish(found)   # very first scan: show something while walking
+            self._publish(found)
+
+            todo = [e for e in found if e.kind != "file"
+                    and (self.dates.get(e.path) or [None, None])[:2] != [int(e.m), e.size]]
+            last = time.monotonic()
+            for i, e in enumerate(todo):
+                self.progress = {"phase": "dates", "found": len(found), "done": i, "total": len(todo), "dir": os.path.dirname(e.path)}
+                t = taken(e)
+                self.dates[e.path] = [int(e.m), e.size, round(t) if t else 0]
+                if t:
+                    e.t = t
+                if i % 11 == 0:
+                    self._seen(e.name)
+                if time.monotonic() - last > 2.5:
+                    last = time.monotonic()
+                    self._publish(found)
+            if todo:
+                self._publish(found)
+                live = {e.path for e in found}
+                self.dates = {p: v for p, v in self.dates.items() if p in live}
+                try:
+                    tmp = self.dates_file.with_suffix(".tmp")
+                    tmp.write_text(json.dumps(self.dates, separators=(",", ":")), "utf-8")
+                    os.replace(tmp, self.dates_file)
+                except OSError:
+                    pass
         finally:
+            self.progress = {"phase": "idle", "found": len(self.entries)}
             self.scanning = False
+
+    def status(self) -> dict:
+        return {**self.progress, "scanning": self.scanning, "recent": list(self.recent[-14:]),
+                "scanned": int(self.scanned_at * 1000)}
 
     def ensure(self, max_age: float = 45) -> None:
         if time.time() - self.scanned_at > max_age:
@@ -166,7 +319,7 @@ class Gallery:
         for e in self.entries:
             counts[e.kind] += 1
         return {"total": len(src), "offset": offset, "items": [e.public() for e in src[offset:offset + limit]],
-                "counts": counts, "home": str(Path.home()), "scanning": self.scanning, "scanned": int(self.scanned_at * 1000)}
+                "counts": counts, "home": str(Path.home()), "scanning": self.scanning, "progress": self.status(), "scanned": int(self.scanned_at * 1000)}
 
     def get(self, eid: str) -> Entry | None:
         return self.by_id.get(eid)
@@ -174,7 +327,7 @@ class Gallery:
     # ---- thumbnails ------------------------------------------------------- #
     def thumb(self, e: Entry) -> Path | None:
         """A small JPEG for the grid, made once and cached. None when it can't be made."""
-        out = self.thumbs / f"{e.id}-{int(e.t)}.jpg"
+        out = self.thumbs / f"{e.id}-{int(e.m)}.jpg"
         if out.exists():
             return out
         tmp = out.with_suffix(f".{threading.get_ident()}.part")
@@ -219,7 +372,7 @@ class Gallery:
 
     def prune_thumbs(self) -> None:
         """Removes thumbnails of files that no longer exist."""
-        keep = {f"{e.id}-{int(e.t)}.jpg" for e in self.entries}
+        keep = {f"{e.id}-{int(e.m)}.jpg" for e in self.entries}
         try:
             for f in os.scandir(self.thumbs):
                 if f.name not in keep:

@@ -916,19 +916,30 @@ class Tonefer:
 
     # ---- gallery ---------------------------------------------------------- #
     async def rescan_gallery(self) -> None:
-        await asyncio.to_thread(self.gallery.scan)
+        try:
+            await asyncio.to_thread(self.gallery.scan)
+        except Exception as e:
+            print(f"gallery scan failed: {e}", file=sys.stderr)
+            self.gallery.scanning = False
+            return
         await self.desk_send({"type": "gallery", "scanned": int(self.gallery.scanned_at * 1000)})
         await asyncio.to_thread(self.gallery.prune_thumbs)
 
     async def desk_gallery(self, request):
         g = self.gallery
         offset = max(self._int(request.query.get("offset"), 0), 0)
-        if g.scanned_at == 0:
-            await asyncio.to_thread(g.scan)          # first open: wait for the first index
-        elif offset == 0 and not g.scanning and (request.query.get("fresh") or time.time() - g.scanned_at > 45):
-            asyncio.ensure_future(self.rescan_gallery())   # later: answer now, refresh behind
+        # Never make the page wait for a scan: answer with what is known, refresh behind.
+        if not g.scanning and (g.scanned_at == 0 or (offset == 0 and (request.query.get("fresh") or time.time() - g.scanned_at > 45))):
+            asyncio.ensure_future(self.rescan_gallery())
+            await asyncio.sleep(0.05)
         limit = min(max(self._int(request.query.get("limit"), 600), 1), 5000)
-        return web.json_response(g.page(request.query.get("kind", "media"), request.query.get("q", "").strip(), offset, limit))
+        try:
+            return web.json_response(g.page(request.query.get("kind", "media"), request.query.get("q", "").strip(), offset, limit))
+        except Exception as e:
+            return web.json_response({"error": f"{type(e).__name__}: {e}"}, status=500)
+
+    async def desk_gallery_status(self, request):
+        return web.json_response(self.gallery.status())
 
     def _entry(self, request) -> gal.Entry:
         e = self.gallery.get(request.match_info["id"])
@@ -1012,6 +1023,25 @@ class Tonefer:
         info["online"] = latest is not None
         await self.desk_send({"type": "update", **info})
         return info
+
+    async def version_watcher(self) -> None:
+        """After the app is reinstalled or updated by hand, the old program would keep running
+        with the new pages (and their new buttons would fail). Notice that and restart."""
+        path = Path(__file__).resolve().parent / "VERSION"
+        while True:
+            await asyncio.sleep(5)
+            try:
+                on_disk = path.read_text().strip()
+            except OSError:
+                continue
+            if on_disk and on_disk != VERSION and not self.updating:
+                busy = self.downloads or any(not i.done for i in self.uploads.values())
+                if busy:
+                    continue
+                print(f"Tonefer {on_disk} was installed; restarting (was {VERSION})", flush=True)
+                await self.desk_send({"type": "updating", "stage": "restart", "version": on_disk})
+                await asyncio.sleep(0.5)
+                up.restart()
 
     async def update_watcher(self) -> None:
         """Looks for a new version shortly after start and twice a day, if allowed."""
@@ -1333,6 +1363,7 @@ class Tonefer:
         r.add_post("/desk/api/send-folder", self.desk_send_folder)
         r.add_post("/desk/api/extract/{id}", self.desk_extract)
         r.add_get("/desk/api/gallery", self.desk_gallery)
+        r.add_get("/desk/api/gallery/status", self.desk_gallery_status)
         r.add_get("/desk/thumb/{id}", self.desk_thumb)
         r.add_get("/desk/media/{id}", self.desk_media)
         r.add_post("/desk/api/gallery/trash", self.desk_gallery_trash)
@@ -1356,12 +1387,14 @@ class Tonefer:
             _app["janitor"] = asyncio.create_task(self.janitor())
             _app["awake"] = asyncio.create_task(self.stay_awake())
             _app["updates"] = asyncio.create_task(self.update_watcher())
+            _app["version"] = asyncio.create_task(self.version_watcher())
 
         async def stop_watcher(_app):
             _app["watcher"].cancel()
             _app["janitor"].cancel()
             _app["awake"].cancel()
             _app["updates"].cancel()
+            _app["version"].cancel()
 
         app.on_startup.append(start_watcher)
         app.on_cleanup.append(stop_watcher)
