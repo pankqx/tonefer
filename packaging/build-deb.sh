@@ -99,8 +99,9 @@ if [ "$1" = "configure" ]; then
     ufw allow 8765/tcp comment tonefer >/dev/null 2>&1 || true
   fi
   # Restart Tonefer for anyone who has it running, so the new version takes over at once.
-  for u in $(loginctl list-users --no-legend 2>/dev/null | awk '{print $2}'); do
-    systemctl --user --machine="$u@" try-restart tonefer.service >/dev/null 2>&1 || true
+  # Never let this hold up the install: no waiting for the restart, and a hard time limit.
+  for u in $(timeout 5 loginctl list-users --no-legend 2>/dev/null | awk '{print $2}'); do
+    timeout 10 systemctl --user --machine="$u@" --no-block try-restart tonefer.service >/dev/null 2>&1 || true
   done
   command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database -q /usr/share/applications || true
   command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -q /usr/share/icons/hicolor || true

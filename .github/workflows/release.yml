@@ -19,6 +19,9 @@ jobs:
       - name: Install it like a user would
         # A stuck package mirror once hung this step for good; fail fast instead.
         timeout-minutes: 10
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          NEEDRESTART_MODE: a
         run: |
           sudo apt-get update -qq -o Acquire::Retries=3 -o Acquire::http::Timeout=30
           sudo apt-get install -y -qq -o Acquire::Retries=3 -o Acquire::http::Timeout=30 ./dist/tonefer_*_all.deb xvfb imagemagick dbus-x11 x11-utils >/dev/null
