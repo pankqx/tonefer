@@ -1,0 +1,59 @@
+installed exe: C:\Program Files\Tonefer\Tonefer.exe
+server ok: True
+
+Rule Name:                            Tonefer
+----------------------------------------------------------------------
+Enabled:                              Yes
+Direction:                            In
+Profiles:                             Private,Public
+Grouping:                             
+LocalIP:                              Any
+RemoteIP:                             Any
+Protocol:                             Any
+Edge traversal:                       No
+Action:                               Allow
+Ok.
+
+
+Name      Id
+----      --
+msedge  1900
+msedge  2856
+msedge  3052
+msedge  3068
+msedge  3336
+msedge  4000
+msedge  4236
+msedge  6396
+msedge  7484
+msedge  8012
+Tonefer 8800
+
+
+
+  TCP    0.0.0.0:8765           0.0.0.0:0              LISTENING       8800
+  TCP    127.0.0.1:8765         127.0.0.1:49560        ESTABLISHED     8800
+  TCP    127.0.0.1:8765         127.0.0.1:51053        ESTABLISHED     8800
+  TCP    127.0.0.1:8765         127.0.0.1:51376        ESTABLISHED     8800
+  TCP    127.0.0.1:8765         127.0.0.1:59629        ESTABLISHED     8800
+  TCP    127.0.0.1:8765         127.0.0.1:61727        ESTABLISHED     8800
+  TCP    127.0.0.1:8765         127.0.0.1:62830        ESTABLISHED     8800
+  TCP    127.0.0.1:8765         127.0.0.1:65228        ESTABLISHED     8800
+  TCP    127.0.0.1:49560        127.0.0.1:8765         ESTABLISHED     7484
+  TCP    127.0.0.1:51053        127.0.0.1:8765         ESTABLISHED     7484
+  TCP    127.0.0.1:51376        127.0.0.1:8765         ESTABLISHED     7484
+  TCP    127.0.0.1:56828        127.0.0.1:8765         TIME_WAIT       0
+  TCP    127.0.0.1:59629        127.0.0.1:8765         ESTABLISHED     7484
+  TCP    127.0.0.1:61727        127.0.0.1:8765         ESTABLISHED     7484
+  TCP    127.0.0.1:62830        127.0.0.1:8765         ESTABLISHED     7484
+  TCP    127.0.0.1:65228        127.0.0.1:8765         ESTABLISHED     7484
+
+
+Name
+----
+_internal
+Tonefer.exe
+unins000.dat
+unins000.exe
+
+
