@@ -27,12 +27,14 @@ jobs:
           NEEDRESTART_MODE: a
         run: sudo -E apt-get install -y -qq -o Acquire::Retries=3 xvfb imagemagick dbus-x11 x11-utils >/dev/null
       - name: Install it like a user would
-        timeout-minutes: 4
+        timeout-minutes: 10
         env:
           DEBIAN_FRONTEND: noninteractive
           NEEDRESTART_MODE: a
         run: |
-          sudo -E apt-get install -y ./dist/tonefer_*_all.deb
+          # Required packages only: the optional video codecs (ffmpeg, gstreamer) are ~150 MB
+          # and a slow mirror can stall on them. Real installs still get them.
+          sudo -E apt-get install -y -qq --no-install-recommends -o Acquire::Retries=3 ./dist/tonefer_*_all.deb
           dpkg -s tonefer | grep -E "Status|Version"
           systemctl --global is-enabled tonefer.service
       - name: Server serves the laptop view
