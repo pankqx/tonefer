@@ -96,3 +96,17 @@ carry only that session's items, `/api/file/<id>` answers `404` for anything els
 are stored under `Received/Guest <name>`. Items made in a guest session carry `"session": "<id>"`.
 `hello` includes `"guest": "<name>"` so the client can show it. Ending the session closes its
 sockets with `4001` and its token starts answering `401`. Sessions expire after 12 hours.
+
+## Phone to phone
+
+The Android app can play the laptop's part (menu → *Phone to phone*). It serves the same phone
+page and the same endpoints from the phone itself (`HostCore.java`, port 8765), so a second phone
+pairs by scanning its code with the camera; no app is needed there. Differences:
+
+- The QR link carries `&p=phone` after the key: `http://<ip>:8765/#k=<key>&p=phone`. A link
+  without `p=` is from a laptop.
+- `hello` includes `"peer": "phone"`, so the page names the other side "phone" instead of "laptop".
+- Items the host phone sends carry `"origin": "laptop"` (the host side), so the existing page shows
+  them on the other side of the conversation unchanged.
+- No guest sessions, no history on disk: a session lives until *Stop* (or 15 minutes with nobody
+  connected). *New code* rotates the key and closes sockets with `4001`.

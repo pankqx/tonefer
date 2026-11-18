@@ -226,6 +226,19 @@ The Android app (repository **tonefer-android**) adds:
 - **Automatic discovery:** finds the laptop even when its address changes
 - **Background connection** with notifications
 - **Customisation:** theme, text size, auto-save photos, auto-copy notes, image quality, notifications
+- **Phone to phone:** a QR code that any other phone scans to swap files directly, no laptop
+
+### Phone to phone (no laptop)
+
+The Android app can connect two phones directly. The other phone needs no app: any camera and browser will do, iPhone included.
+
+1. On the Android phone, turn on the **hotspot**, then open Tonefer → menu ⋮ → **Phone to phone** → **Start**. (Before pairing with a laptop, the button is on the welcome screen.)
+2. On the other phone, **join that hotspot** in Wi‑Fi settings.
+3. Point the other phone's **camera** at the code and tap the link. The Tonefer page opens and says *Connected*.
+
+Now send notes, photos, files or a whole folder (as a zip) either way. What arrives on the Android phone can be opened or saved; photos save to `Pictures/Tonefer` if auto-save is on. Both phones on the same Wi‑Fi works too. **New code** in the menu cuts the other phone off; **Stop** ends it (it also stops by itself after 15 minutes with nobody connected). Nothing is kept after you stop, apart from what you saved.
+
+If the page doesn't open: check the other phone is on the hotspot (not mobile data only), and if the screen lists two addresses, tap the other one so the code changes.
 
 **Install:** on the phone, open **https://github.com/pankqx/tonefer-android/releases/latest/download/tonefer.apk**, then open the downloaded file. Allow *Install unknown apps* for your browser when asked.
 

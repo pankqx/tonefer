@@ -44,8 +44,19 @@
   const openJson = (s) => JSON.parse(dec.decode(open(b64ToBytes(s))));
 
   // ---------------- pairing ----------------
+  // Who is on the other end: a laptop, or another phone running Tonefer (phone to phone).
+  let peer = "laptop";
+  const Peer = () => peer[0].toUpperCase() + peer.slice(1);
+
   function loadKey() {
     const m = location.hash.match(/k=([A-Za-z0-9_-]{40,})/);
+    // A fresh code says who made it; a code without p= comes from a laptop.
+    const pm = m ? (location.hash.match(/[#&]p=(phone|laptop)/) || [0, "laptop"]) : null;
+    try {
+      if (pm) localStorage.setItem("tonefer.peer", pm[1]);
+      peer = localStorage.getItem("tonefer.peer") || peer;
+    } catch (_) { if (pm) peer = pm[1]; }
+    applyPeer();
     if (m) {
       try { localStorage.setItem(STORE, m[1]); } catch (_) {}
       history.replaceState(null, "", location.pathname); // drop key from the address bar
@@ -56,6 +67,20 @@
       if (s) return b64urlToBytes(s);
     } catch (_) {}
     return null;
+  }
+
+  /** Words on the page that name the other device. */
+  function applyPeer() {
+    const t = $("text");
+    if (t) t.placeholder = `Note to ${peer}…`;
+    const off = $("offline");
+    if (off) off.innerHTML = peer === "phone"
+      ? "<b>Can't reach the other phone.</b>Is Phone to phone still on there, and are you on its hotspot?"
+      : "<b>Can't reach your laptop.</b>Is tonefer running there, and is the laptop still on this phone's hotspot?";
+    try { // opts may not exist yet on first run
+      opts.peerLabel = peer;
+      if (peer === "phone") opts.emptyText = "Send a note, photos or files. They land on the other phone right away.";
+    } catch (_) {}
   }
 
   function showWelcome(title, text) {
@@ -70,7 +95,7 @@
   function unpair(reason) {
     try { localStorage.removeItem(STORE); } catch (_) {}
     key = null;
-    showWelcome("Unpaired.", reason || "Scan the new code on your laptop to pair again.");
+    showWelcome("Unpaired.", reason || `Scan the new code on the ${peer} to pair again.`);
   }
 
   // ---------------- state + rendering ----------------
@@ -222,7 +247,7 @@
     clearTimeout(offlineTimer);
     if (on) $("offline").hidden = true;
     else offlineTimer = setTimeout(() => { $("offline").hidden = false; T.hideLoader(); }, 4000);
-    if (!on && text === "laptop offline") T.loaderText("Looking for your laptop");
+    if (!on && text === `${peer} offline`) T.loaderText(`Looking for the ${peer}`);
   }
 
   // ---------------- live connection ----------------
@@ -239,13 +264,18 @@
         T.hideLoader();
         retry = 0;
         items = m.items;
-        status((m.host || "laptop") + (m.guest ? " · guest" : ""), true);
+        if (m.peer && m.peer !== peer) {
+          peer = m.peer;
+          try { localStorage.setItem("tonefer.peer", peer); } catch (_) {}
+          applyPeer();
+        }
+        status((m.host || peer) + (m.guest ? " · guest" : ""), true);
         if (m.guest) opts.emptyText = "You're a guest on this laptop. Send a note, photos or files; only you and the laptop's owner see them.";
         draw(true);
       } else if (m.type === "item") {
         items.push(m.item);
         draw(m.item.origin === "phone");
-        if (m.item.origin === "laptop" && navigator.vibrate) navigator.vibrate(25);
+        if (m.item.origin !== "phone" && navigator.vibrate) navigator.vibrate(25);
       } else if (m.type === "deleted") {
         items = items.filter((i) => i.id !== m.id);
         draw();
@@ -257,7 +287,7 @@
     };
     ws.onclose = (e) => {
       if (e.code === 4001 || e.code === 1008) return unpair();
-      status("laptop offline");
+      status(`${peer} offline`);
       checkPaired().then((ok) => {
         if (ok) timer = setTimeout(connect, Math.min(1000 * 2 ** retry++, 8000));
       });
@@ -290,7 +320,7 @@
     e.preventDefault();
     const text = ta.value;
     if (!text.trim()) return;
-    if (!ws || ws.readyState !== 1) return toast("Laptop not connected");
+    if (!ws || ws.readyState !== 1) return toast(`${Peer()} not connected`);
     ws.send(sealJson({ type: "text", text }));
     ta.value = ""; autosize();
   });
@@ -340,7 +370,7 @@
    * chunk is simply sent again. With zipName, the laptop writes every file into one zip.
    */
   async function send(files, zipName, row) {
-    if (!ws || ws.readyState !== 1) throw new Error("laptop not connected");
+    if (!ws || ws.readyState !== 1) throw new Error(`${peer} not connected`);
     const list = files.map((x) => (x instanceof File ? { file: x, path: x.name } : x));
     const total = list.reduce((n, x) => n + x.file.size, 0) || 1;
     const t0 = performance.now();
@@ -379,7 +409,7 @@
         } catch (e) {
           if (row.cancelled) throw new Error("cancelled");
           if (e.status === 409 && e.body && typeof e.body.next === "number") { i = e.body.next; next = prep(i); continue; }
-          if (e.status === 403) throw new Error("Pairing changed. Scan the code on your laptop again.");
+          if (e.status === 403) throw new Error(`Pairing changed. Scan the code on the ${peer} again.`);
           if (e.status === 404 || ++tries > 8) throw new Error(e.text || "connection lost");
           await sleep(Math.min(1000 * 2 ** (tries - 1), 10000)); // hotspot hiccup: wait, then send the chunk again
           next = prep(i);

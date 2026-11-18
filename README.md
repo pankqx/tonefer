@@ -31,6 +31,7 @@ Most phone-to-laptop tools go through someone else's server, need an account, or
 | **Guest sessions** | A friend scans a separate code to send to your laptop. They see only their own transfers and are cut off when you end the session. |
 | **History** | Every transfer stays in a timeline on both devices until you clear it. |
 | **Android app** | *Share → Tonefer* from any app, automatic discovery, background notifications and a full customisation menu. |
+| **Phone to phone** | No laptop? The Android app shows a QR code and any other phone (iPhone too) scans it with its camera. Notes, photos, files and folders go straight between the two phones over the hotspot. |
 | **Live speedometer** | Measures the real speed of every transfer, plus a one-click speed test. |
 | **Auto hotspot** | The laptop joins your phone's hotspot by itself. Shares made while it's away are queued and delivered automatically. |
 | **Built-in help** | An Instructions tab on the laptop (<kbd>F1</kbd>) and a help sheet on the phone. |
