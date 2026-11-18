@@ -16,15 +16,23 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build .deb
         run: ./packaging/build-deb.sh
+      # Split into small steps with their own time limits, so a hang points at its cause.
+      - name: Package lists
+        timeout-minutes: 4
+        run: sudo apt-get update -qq -o Acquire::Retries=3 -o Acquire::http::Timeout=30
+      - name: Test tools
+        timeout-minutes: 6
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          NEEDRESTART_MODE: a
+        run: sudo -E apt-get install -y -qq -o Acquire::Retries=3 xvfb imagemagick dbus-x11 x11-utils >/dev/null
       - name: Install it like a user would
-        # A stuck package mirror once hung this step for good; fail fast instead.
-        timeout-minutes: 10
+        timeout-minutes: 4
         env:
           DEBIAN_FRONTEND: noninteractive
           NEEDRESTART_MODE: a
         run: |
-          sudo apt-get update -qq -o Acquire::Retries=3 -o Acquire::http::Timeout=30
-          sudo apt-get install -y -qq -o Acquire::Retries=3 -o Acquire::http::Timeout=30 ./dist/tonefer_*_all.deb xvfb imagemagick dbus-x11 x11-utils >/dev/null
+          sudo -E apt-get install -y ./dist/tonefer_*_all.deb
           dpkg -s tonefer | grep -E "Status|Version"
           systemctl --global is-enabled tonefer.service
       - name: Server serves the laptop view

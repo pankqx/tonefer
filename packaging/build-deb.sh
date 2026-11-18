@@ -100,8 +100,8 @@ if [ "$1" = "configure" ]; then
   fi
   # Restart Tonefer for anyone who has it running, so the new version takes over at once.
   # Never let this hold up the install: no waiting for the restart, and a hard time limit.
-  for u in $(timeout 5 loginctl list-users --no-legend 2>/dev/null | awk '{print $2}'); do
-    timeout 10 systemctl --user --machine="$u@" --no-block try-restart tonefer.service >/dev/null 2>&1 || true
+  for u in $(timeout -k 2 5 loginctl list-users --no-legend 2>/dev/null | awk '{print $2}'); do
+    timeout -k 2 10 systemctl --user --machine="$u@" --no-block try-restart tonefer.service >/dev/null 2>&1 || true
   done
   command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database -q /usr/share/applications || true
   command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -q /usr/share/icons/hicolor || true
