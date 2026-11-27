@@ -154,6 +154,7 @@
   }
 </style>
 <link rel="stylesheet" href="/static/gallery.css">
+<link rel="stylesheet" href="/static/backup.css">
 </head>
 <body data-steps="Loading interface|Checking network|Preparing pairing code|Unlocking encryption keys|Ready">
 <div class="loader" id="loader" role="status" aria-live="polite">
@@ -176,6 +177,7 @@
     <span id="brand"></span>
     <button class="item" id="menuTransfers">Transfers</button>
     <button class="item" id="menuGallery">Gallery</button>
+    <button class="item" id="menuBackup">Phone backup</button>
     <button class="item" id="menuHelp">Instructions</button>
     <span class="item host" id="host"></span>
     <span class="grow"></span>
@@ -288,6 +290,7 @@
         <span class="box"></span>
         <button class="tab" role="tab" id="tabTransfers" aria-selected="true">Transfers</button>
         <button class="tab" role="tab" id="tabGallery" aria-selected="false">Gallery</button>
+        <button class="tab" role="tab" id="tabBackup" aria-selected="false">Phone backup</button>
         <button class="tab" role="tab" id="tabHelp" aria-selected="false">Instructions</button>
       </div>
 
@@ -346,6 +349,106 @@
           <button class="btn" id="galSend">Send to phone</button>
           <button class="btn ghost danger" id="galTrash">Move to Trash</button>
           <button class="btn ghost" id="galCancel">Cancel</button>
+        </div>
+      </div>
+
+      <div class="pane bk" id="paneBackup" hidden>
+        <div class="bk-scroll">
+          <header class="bk-head">
+            <span class="label">Phone backup · USB cable</span>
+            <h1 class="big">Every photo and video, onto this laptop</h1>
+            <p>Camera, WhatsApp, Screenshots, Telegram, Instagram, Downloads, memory card: every folder at once, sorted by month. Copy keeps the phone as it is. Move frees space on the phone after each file is checked.</p>
+          </header>
+
+          <section class="bk-step">
+            <h2><span>01</span> Connect the phone</h2>
+            <div class="bk-phone">
+              <span class="pill" id="bkPill">no phone</span>
+              <div class="grow"><b id="bkPhone">Looking for your phone…</b><small id="bkPhoneSub"></small></div>
+            </div>
+            <p class="bk-err" id="bkDevErr" hidden></p>
+            <details class="bk-how" id="bkHow">
+              <summary>How to connect (first time only)</summary>
+              <ol class="steps">
+                <li>On the phone: <b>Settings → About phone</b>, tap <b>Build number</b> seven times. ("You are now a developer")</li>
+                <li><b>Settings → System → Developer options</b> (or search "Developer"), switch on <b>USB debugging</b>.</li>
+                <li>Plug the phone into this laptop with a USB cable. Unlock it and tap <b>Allow</b> on <i>Allow USB debugging?</i> Tick <i>Always allow from this computer</i>.</li>
+                <li>The phone's name appears above within a few seconds.</li>
+              </ol>
+              <p class="note" id="bkAdbHint">Ubuntu needs Android's USB tool once: <code>sudo apt install adb</code></p>
+            </details>
+            <details class="bk-how">
+              <summary>No cable? Wireless debugging (Android 11+, slower)</summary>
+              <ol class="steps">
+                <li>Developer options → <b>Wireless debugging</b> on → tap it → <b>Pair device with pairing code</b>. Type the IP:port and code here, press Pair.</li>
+                <li>Then type the IP:port from the main Wireless debugging screen and press Connect.</li>
+              </ol>
+              <div class="bk-row"><input id="bkPairAddr" placeholder="192.168.43.1:37123" autocomplete="off"><input id="bkPairCode" class="code" placeholder="code" autocomplete="off"><button class="btn" id="bkPair">Pair</button></div>
+              <div class="bk-row"><input id="bkConnAddr" placeholder="192.168.43.1:41234" autocomplete="off"><button class="btn" id="bkConnect">Connect</button></div>
+            </details>
+          </section>
+
+          <section class="bk-step">
+            <h2><span>02</span> Find everything</h2>
+            <div class="bk-lib">
+              <div class="grow"><span class="label">Saved to</span><div class="path" id="bkLib"></div></div>
+              <button class="btn ghost" id="bkLibChange">Change folder</button>
+              <button class="btn ghost" id="bkLibReset" hidden>Reset</button>
+              <button class="btn ghost" id="bkLibOpen">Open</button>
+            </div>
+            <div class="bk-row">
+              <button class="btn primary" id="bkScan" disabled>Scan the phone</button>
+              <label class="check" style="margin:0"><input type="checkbox" id="bkHidden"> Include hidden folders (WhatsApp statuses)</label>
+            </div>
+            <p class="bk-msg" id="bkScanMsg"></p>
+            <div id="bkSummary" hidden>
+              <div class="bk-stats">
+                <div><b id="bkFiles">0</b><span>photos &amp; videos</span></div>
+                <div><b id="bkSize">0</b><span>total size</span></div>
+                <div><b id="bkMix">0</b><span>photos / videos</span></div>
+                <div><b id="bkSaved">0</b><span>already here</span></div>
+              </div>
+              <table class="bk-table">
+                <thead><tr><th>From</th><th>Photos</th><th>Videos</th><th>Size</th><th>Already here</th></tr></thead>
+                <tbody id="bkSources"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="bk-step">
+            <h2><span>03</span> Copy or move</h2>
+            <div class="bk-modes">
+              <div class="bk-mode">
+                <h3>Copy</h3>
+                <p>Everything is copied. The phone stays exactly as it is. Run it again any time: only new photos are copied.</p>
+                <label class="check"><input type="checkbox" id="bkVerify"> Double-check every file (MD5, slower)</label>
+                <button class="btn primary" id="bkCopy" disabled>Copy to laptop</button>
+              </div>
+              <div class="bk-mode">
+                <h3>Move <small>(cut)</small></h3>
+                <p>Copies, checks each file is identical (size and MD5 checksum), and only then deletes it from the phone. Anything that fails the check stays on the phone.</p>
+                <button class="btn" id="bkMove" disabled>Move to laptop</button>
+                <div class="bk-confirm" id="bkConfirm" hidden>
+                  <p>Photos are deleted from the phone once they're safely on this laptop.</p>
+                  <div class="bk-row"><button class="btn danger-fill" id="bkMoveYes">Yes, move them</button><button class="btn ghost" id="bkMoveNo">Cancel</button></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bk-prog" id="bkProg" hidden>
+              <div class="bar"><i id="bkBar"></i></div>
+              <div class="bk-pline">
+                <span><b id="bkPct">0%</b> · <span id="bkCount"></span> · <span id="bkBytes"></span></span>
+                <span><b id="bkSpeed">–</b> · <b id="bkEta">–</b> left</span>
+              </div>
+              <div class="bk-current" id="bkCurrent"></div>
+              <div class="bk-row"><button class="btn" id="bkStop">Stop</button><span class="small" style="margin:0">Safe to stop. Run it again and it carries on.</span></div>
+            </div>
+            <p class="bk-msg" id="bkMsg"></p>
+            <div class="bk-fails" id="bkFails"></div>
+            <div class="bk-row" id="bkAfter" hidden><button class="btn" id="bkToGallery">See them in the Gallery</button></div>
+          </section>
+          <details class="bk-log"><summary>Activity</summary><pre id="bkLog"></pre></details>
         </div>
       </div>
 
@@ -420,6 +523,8 @@
               <tr><td>Find something old</td><td>Type in the search box above the history</td></tr>
               <tr><td>Browse photos, videos and files</td><td><i>Gallery</i> tab. Newest first, grouped by day. Click to view; arrow keys or the scroll wheel move to the next one; videos play at once</td></tr>
               <tr><td>Delete from the Gallery</td><td><kbd>Delete</kbd> in the viewer, or <i>Select</i> several and <i>Move to Trash</i>. Files go to the system Trash, so you can restore them</td></tr>
+              <tr><td>Edit a photo</td><td>Open it in the Gallery, press <i>Edit</i> (or <kbd>E</kbd>). Crop, turn, mirror, light, contrast, colour. <i>Save as copy</i> keeps the original; <i>Replace original</i> puts the original in the Trash</td></tr>
+              <tr><td>Back up the whole phone</td><td><i>Phone backup</i> tab. USB cable + USB debugging, then <i>Scan</i> and <i>Copy</i> or <i>Move</i>. Every folder at once, sorted by month into <code>~/Tonefer/Phone backup</code></td></tr>
               <tr><td>Add a folder to the Gallery</td><td>Gallery → <i>Folders</i> → <i>Add a folder</i></td></tr>
               <tr><td>Copy a received note</td><td>Click the copy icon on the message</td></tr>
               <tr><td>Open or save a photo</td><td>Click it, then <i>Save</i></td></tr>
@@ -503,6 +608,7 @@
 <div class="lb" id="lb" hidden>
   <div class="lb-top">
     <div class="meta"><b id="lbName"></b><small id="lbInfo"></small></div>
+    <button class="lb-btn" id="lbEdit" hidden>Edit</button>
     <button class="lb-btn" id="lbSend">Send to phone</button>
     <button class="lb-btn" id="lbFolder">Show in folder</button>
     <button class="lb-btn danger" id="lbTrash">Move to Trash</button>
@@ -511,6 +617,43 @@
   <div class="lb-stage" id="lbStage">
     <button class="lb-nav prev" id="lbPrev" aria-label="Previous">‹</button>
     <button class="lb-nav next" id="lbNext" aria-label="Next">›</button>
+  </div>
+</div>
+
+<div class="ed" id="ed" hidden role="dialog" aria-label="Edit photo">
+  <div class="ed-top">
+    <div class="meta"><b id="edName"></b><small id="edInfo">Drag on the photo to crop</small></div>
+    <button class="lb-btn" id="edReset">Reset</button>
+    <button class="lb-btn" id="edCancel">Cancel</button>
+    <button class="lb-btn" id="edReplace" title="The original goes to the Trash, so you can restore it">Replace original</button>
+    <button class="lb-btn primary" id="edCopy">Save as copy</button>
+  </div>
+  <div class="ed-main">
+    <div class="ed-stage" id="edStage">
+      <div class="ed-frame" id="edFrame">
+        <canvas id="edCanvas"></canvas>
+        <div class="ed-shade" id="edShade"></div>
+        <div class="ed-crop" id="edCrop"><i data-h="nw"></i><i data-h="ne"></i><i data-h="sw"></i><i data-h="se"></i></div>
+      </div>
+      <div class="ed-busy" id="edBusy" hidden>Saving…</div>
+    </div>
+    <aside class="ed-side">
+      <h4>Crop</h4>
+      <div class="ed-ratios" id="edRatios">
+        <button data-r="free" aria-pressed="true">Free</button><button data-r="orig">Original</button><button data-r="1">1:1</button>
+        <button data-r="1.3333">4:3</button><button data-r="0.75">3:4</button><button data-r="1.7778">16:9</button><button data-r="0.5625">9:16</button>
+      </div>
+      <h4>Turn</h4>
+      <div class="ed-tools">
+        <button id="edRotL" title="Rotate left">⟲ Left</button><button id="edRotR" title="Rotate right">⟳ Right</button>
+        <button id="edFlipH" title="Mirror">⇋ Mirror</button><button id="edFlipV" title="Flip upside down">⇵ Flip</button>
+      </div>
+      <h4>Adjust</h4>
+      <label class="ed-slider">Light <output id="edBo">0</output><input type="range" id="edB" min="50" max="150" value="100"></label>
+      <label class="ed-slider">Contrast <output id="edCo">0</output><input type="range" id="edC" min="50" max="150" value="100"></label>
+      <label class="ed-slider">Colour <output id="edSo">0</output><input type="range" id="edS" min="0" max="200" value="100"></label>
+      <p class="ed-hint">Double-click a slider to reset it. <kbd>Esc</kbd> cancels, <kbd>Ctrl+S</kbd> saves a copy.</p>
+    </aside>
   </div>
 </div>
 
@@ -526,6 +669,8 @@
 
 <script src="/static/common.js"></script>
 <script src="/static/desk.js"></script>
+<script src="/static/editor.js"></script>
 <script src="/static/gallery.js"></script>
+<script src="/static/backup.js"></script>
 </body>
 </html>

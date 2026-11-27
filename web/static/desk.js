@@ -651,20 +651,23 @@
 
   // ---- tabs: Transfers | Instructions ----
   function showTab(name) {
-    if (!["transfers", "gallery", "help"].includes(name)) name = "transfers";
-    const map = { transfers: ["paneTransfers", "tabTransfers", "menuTransfers"], gallery: ["paneGallery", "tabGallery", "menuGallery"], help: ["paneHelp", "tabHelp", "menuHelp"] };
+    if (!["transfers", "gallery", "backup", "help"].includes(name)) name = "transfers";
+    const map = { transfers: ["paneTransfers", "tabTransfers", "menuTransfers"], gallery: ["paneGallery", "tabGallery", "menuGallery"], backup: ["paneBackup", "tabBackup", "menuBackup"], help: ["paneHelp", "tabHelp", "menuHelp"] };
     for (const [k, [pane, tab, menu]] of Object.entries(map)) {
       $(pane).hidden = k !== name;
       $(tab).setAttribute("aria-selected", String(k === name));
       $(menu).classList.toggle("on", k === name);
     }
     try { localStorage.setItem("tonefer.tab", name); } catch (_) {}
-    document.body.classList.toggle("wide", name === "gallery");
+    document.body.classList.toggle("wide", name === "gallery" || name === "backup");
     if (name === "transfers") ta.focus();
     if (name === "gallery" && window.Gallery) window.Gallery.show();
+    if (window.PhoneBackup) window.PhoneBackup.visible(name === "backup");
   }
+  window.showTab = showTab;
   $("tabTransfers").onclick = $("menuTransfers").onclick = () => showTab("transfers");
   $("tabGallery").onclick = $("menuGallery").onclick = () => showTab("gallery");
+  $("tabBackup").onclick = $("menuBackup").onclick = () => showTab("backup");
   $("tabHelp").onclick = $("menuHelp").onclick = () => showTab("help");
   window.addEventListener("keydown", (e) => {
     if (e.key === "F1") { e.preventDefault(); showTab($("paneHelp").hidden ? "help" : "transfers"); }
@@ -679,6 +682,9 @@
   layout();
   loadPair(true);
   showTab(savedTab);
-  window.addEventListener("load", () => { if (savedTab === "gallery" && window.Gallery) window.Gallery.show(); });
+  window.addEventListener("load", () => {
+    if (savedTab === "gallery" && window.Gallery) window.Gallery.show();
+    if (window.PhoneBackup) window.PhoneBackup.visible(savedTab === "backup");
+  });
   ta.focus();
 })();

@@ -12,8 +12,8 @@
 
   const api = (path, body) => fetch(path, body === undefined ? undefined
     : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  const thumb = (it) => `/desk/thumb/${it.id}?t=${it.t}`;
-  const media = (it) => `/desk/media/${it.id}?t=${it.t}`;
+  const thumb = (it) => `/desk/thumb/${it.id}?t=${it.t}&m=${it.m || 0}`;
+  const media = (it) => `/desk/media/${it.id}?t=${it.t}&m=${it.m || 0}`;
 
   // ---------- dates ----------
   const dayKey = (t) => { const d = new Date(t); return d.getFullYear() * 10000 + d.getMonth() * 100 + d.getDate(); };
@@ -345,6 +345,7 @@
     void stage.offsetWidth;
     if (dir) stage.classList.add(dir > 0 ? "in-next" : "in-prev");
     $("lbName").textContent = it.name;
+    $("lbEdit").hidden = !it.editable || !window.PhotoEditor;
     $("lbInfo").textContent = `${at + 1} of ${total.toLocaleString()} · ${when(it.t)} · ${size(it.size)} · ${short(it.dir)}`;
     // The grid thumbnail is already in the browser's cache: show it at once, then sharpen.
     stage.style.backgroundImage = `url("${thumb(it)}")`;
@@ -378,6 +379,15 @@
       else { const im = new Image(); im.src = thumb(nb); }
     });
   }
+  $("lbEdit").onclick = () => {
+    const it = items[at];
+    if (!it || !window.PhotoEditor) return;
+    window.PhotoEditor.open(it, media(it), async (id) => {
+      await load(true);
+      const i = items.findIndex((x) => x.id === id);
+      if (i >= 0) { at = i; show(0); } else close();
+    });
+  };
   $("lbPrev").onclick = () => step(-1);
   $("lbNext").onclick = () => step(1);
   $("lbClose").onclick = close;
@@ -395,6 +405,7 @@
     step(e.deltaY > 0 ? 1 : -1);
   }, { passive: false });
   window.addEventListener("keydown", (e) => {
+    if (!$("ed").hidden) return;   // the photo editor has the keyboard
     if ($("lb").hidden) {
       if (!$("paneGallery").hidden && e.key === "Escape" && (picked.size || selecting)) clearPick();
       if (!$("paneGallery").hidden && e.key === "Delete" && picked.size) $("galTrash").click();
@@ -405,6 +416,7 @@
     else if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "PageDown") { e.preventDefault(); step(1); }
     else if (e.key === "ArrowLeft" || e.key === "ArrowUp" || e.key === "PageUp") { e.preventDefault(); step(-1); }
     else if (e.key === "Delete") $("lbTrash").click();
+    else if (e.key.toLowerCase() === "e" && !$("lbEdit").hidden) { e.preventDefault(); $("lbEdit").click(); }
     else if (e.key === " " && v) { e.preventDefault(); if (v.paused) v.play(); else v.pause(); }
   });
 

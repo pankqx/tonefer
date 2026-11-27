@@ -35,6 +35,7 @@ import nacl.utils
 import netinfo
 import qrcode
 import qrcode.image.svg
+import backup as bk
 import gallery as gal
 import transfer as tx
 import update as up
@@ -294,6 +295,8 @@ class Tonefer:
         self.hotspot_status = ""
         self.downloads = 0   # laptop → phone streams in flight
         self.gallery = gal.Gallery(APP_DIR, self.config)
+        self.loop: asyncio.AbstractEventLoop | None = None
+        self.backup = bk.Backup(self.config, FILES_DIR / "Phone backup", on_done=self._backup_done)
         self.thumb_slots = asyncio.Semaphore(4)
         self.latest: str | None = None   # newest published version, once checked
         self.updating = False
@@ -977,6 +980,19 @@ class Tonefer:
         reveal(Path(os.path.dirname(e.path)) if body.get("folder") else Path(e.path))
         return web.json_response({"ok": True})
 
+    async def desk_gallery_edit(self, request):
+        body = await request.json()
+        e = self.gallery.get(str(body.get("id")))
+        if e is None or not os.path.exists(e.path):
+            raise web.HTTPNotFound()
+        mode = "replace" if body.get("mode") == "replace" else "copy"
+        try:
+            path = await asyncio.to_thread(gal.save_edit, e, body.get("ops") or {}, mode)
+        except (OSError, ValueError, KeyError, TypeError) as err:
+            return web.json_response({"error": str(err) or "Couldn't save the photo."}, status=400)
+        await self.rescan_gallery()
+        return web.json_response({"id": gal.entry_id(path), "path": path})
+
     async def desk_gallery_send(self, request):
         """Offers gallery files to the phone straight from where they are (nothing is copied)."""
         body = await request.json()
@@ -1009,6 +1025,58 @@ class Tonefer:
                 g.add_folder(str(p))
             await self.rescan_gallery()
         return web.json_response({"folders": g.folder_list()})
+
+    # ---- phone backup (USB, adb) ------------------------------------------- #
+    def _backup_done(self) -> None:
+        """Runs in the backup thread when a copy or move ends: show the new photos in the Gallery."""
+        if self.loop is not None:
+            asyncio.run_coroutine_threadsafe(self.rescan_gallery(), self.loop)
+
+    def _backup_in_gallery(self) -> None:
+        lib = self.backup.library
+        if not any(r == lib or r in lib.parents for r in self.gallery.roots()):
+            self.gallery.add_folder(str(lib))
+
+    async def desk_backup_get(self, request):
+        await asyncio.to_thread(self.backup.refresh)
+        return web.json_response(self.backup.status())
+
+    async def desk_backup_do(self, request):
+        b, body = self.backup, await request.json()
+        action = str(body.get("action", ""))
+        try:
+            if action == "scan":
+                b.start_scan(bool(body.get("hidden")))
+            elif action in ("copy", "move"):
+                self._backup_in_gallery()
+                b.start_run(action, bool(body.get("verify")))
+            elif action == "stop":
+                b.stop.set()
+                b.log("Stopping after the current file")
+            elif action == "connect":
+                await asyncio.to_thread(b.connect, str(body.get("address", "")).strip())
+            elif action == "pair":
+                await asyncio.to_thread(b.pair, str(body.get("address", "")).strip(), str(body.get("code", "")).strip())
+            elif action == "folder":
+                if b.busy:
+                    raise bk.AdbError("Wait until the backup finishes before changing the folder.")
+                if body.get("reset"):
+                    b.set_library(None)
+                else:
+                    path = await asyncio.to_thread(tx.pick_folder, "Choose where to keep your phone's photos")
+                    if path is None:
+                        return web.json_response({"error": "No folder picker on this computer. Install zenity, then try again."}, status=501)
+                    if path:
+                        b.set_library(path)
+                self._backup_in_gallery()
+            elif action == "open":
+                b.library.mkdir(parents=True, exist_ok=True)
+                reveal(b.library)
+            else:
+                raise web.HTTPBadRequest(text="Unknown action")
+        except bk.AdbError as e:
+            return web.json_response({"error": str(e), **b.status()}, status=400)
+        return web.json_response(b.status())
 
     # ---- updates ---------------------------------------------------------- #
     def update_info(self) -> dict:
@@ -1384,8 +1452,11 @@ class Tonefer:
         r.add_post("/desk/api/gallery/trash", self.desk_gallery_trash)
         r.add_post("/desk/api/gallery/open", self.desk_gallery_open)
         r.add_post("/desk/api/gallery/send", self.desk_gallery_send)
+        r.add_post("/desk/api/gallery/edit", self.desk_gallery_edit)
         r.add_get("/desk/api/gallery/folders", self.desk_gallery_folders)
         r.add_post("/desk/api/gallery/folders", self.desk_gallery_folders)
+        r.add_get("/desk/api/backup", self.desk_backup_get)
+        r.add_post("/desk/api/backup", self.desk_backup_do)
         r.add_get("/desk/api/update", self.desk_update_get)
         r.add_post("/desk/api/update", self.desk_update_run)
         r.add_post("/desk/api/update/auto", self.desk_update_set)
@@ -1398,6 +1469,7 @@ class Tonefer:
         r.add_static("/static", WEB / "static")
 
         async def start_watcher(_app):
+            self.loop = asyncio.get_running_loop()
             _app["watcher"] = asyncio.create_task(self.hotspot_watcher())
             _app["janitor"] = asyncio.create_task(self.janitor())
             _app["awake"] = asyncio.create_task(self.stay_awake())
@@ -1405,6 +1477,7 @@ class Tonefer:
             _app["version"] = asyncio.create_task(self.version_watcher())
 
         async def stop_watcher(_app):
+            self.backup.stop.set()
             _app["watcher"].cancel()
             _app["janitor"].cancel()
             _app["awake"].cancel()

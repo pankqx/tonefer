@@ -32,6 +32,8 @@ Most phone-to-laptop tools go through someone else's server, need an account, or
 | **History** | Every transfer stays in a timeline on both devices until you clear it. |
 | **Android app** | *Share → Tonefer* from any app, automatic discovery, background notifications and a full customisation menu. |
 | **Phone to phone** | No laptop? The Android app shows a QR code and any other phone (iPhone too) scans it with its camera. Notes, photos, files and folders go straight between the two phones over the hotspot. |
+| **Phone backup** | One USB cable, one click: every photo and video on the phone (Camera, WhatsApp, Screenshots, Telegram, Downloads, memory card…) copied or moved to the laptop, sorted by month. Moving deletes a phone file only after its copy passes an MD5 check. Stops and resumes safely. |
+| **Gallery and editor** | Every photo and video on the laptop in one timeline. View, play, delete to Trash, and edit: crop, turn, mirror, light, contrast and colour. Edits save as a copy, or replace the original with the original kept in the Trash. |
 | **Live speedometer** | Measures the real speed of every transfer, plus a one-click speed test. |
 | **Auto hotspot** | The laptop joins your phone's hotspot by itself. Shares made while it's away are queued and delivered automatically. |
 | **Built-in help** | An Instructions tab on the laptop (<kbd>F1</kbd>) and a help sheet on the phone. |
@@ -74,6 +76,8 @@ Every release is built, installed and tested automatically on Ubuntu 24.04 and W
 ```
 server.py              Laptop app: pairing, encryption, history, routes
 transfer.py            Chunked transfers and zip building (protocol v2)
+gallery.py             Gallery index, thumbnails, Trash and the photo editor
+backup.py              Phone backup over USB (adb): scan, copy/move, MD5 check, resume
 netinfo.py             Address selection, Wi‑Fi name, firewall detection, doctor
 web/desk/              Laptop interface (Transfers · Instructions)
 web/phone/             Phone web interface
@@ -102,6 +106,8 @@ Configuration (environment variables): `TONEFER_PORT` (8765), `TONEFER_FILES` (`
 - [x] Ubuntu app (.deb) with its own window
 - [x] Windows app with installer
 - [x] Folders as zip and files of any size (chunked, encrypted)
+- [x] Gallery with photo editor (crop, turn, light, contrast, colour)
+- [x] Phone backup over USB: everything, sorted by month, copy or move
 - [ ] Clipboard sync (quick-settings tile)
 
 ---

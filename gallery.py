@@ -32,6 +32,7 @@ SKIP_DIRS = {
     "AppData", "Application Data", "Library", "partial", "thumbs", "Trash", "$RECYCLE.BIN", "System Volume Information",
 }
 THUMB = 360
+EDITABLE = {"jpg", "jpeg", "png", "webp", "bmp"}
 
 
 def default_roots() -> list[Path]:
@@ -64,8 +65,9 @@ class Entry:
         self.t = mtime     # when it was taken: replaced by the photo's own date once read
 
     def public(self) -> dict:
-        return {"id": self.id, "name": self.name, "t": int(self.t * 1000), "size": self.size, "kind": self.kind,
-                "dir": os.path.dirname(self.path)}
+        return {"id": self.id, "name": self.name, "t": int(self.t * 1000), "m": int(self.m), "size": self.size,
+                "kind": self.kind, "dir": os.path.dirname(self.path),
+                "editable": self.kind == "photo" and self.name.rsplit(".", 1)[-1].lower() in EDITABLE}
 
 
 # ---- "when was this taken?" ------------------------------------------------ #
@@ -454,3 +456,97 @@ def _trash_windows(path: str) -> bool:
     op = SHFILEOPSTRUCTW(None, FO_DELETE, ctypes.cast(buf, ctypes.c_void_p), None,
                          FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI, False, None, None)
     return ctypes.windll.shell32.SHFileOperationW(ctypes.byref(op)) == 0 and not op.fAnyOperationsAborted
+
+
+# ---- photo editing ---------------------------------------------------------- #
+def entry_id(path: str) -> str:
+    return hashlib.sha1(path.encode("utf-8", "surrogatepass")).hexdigest()[:16]
+
+
+def _saturate(im, s: float):
+    """Same maths as the CSS saturate() filter the editor previews with."""
+    m = (0.213 + 0.787 * s, 0.715 - 0.715 * s, 0.072 - 0.072 * s, 0,
+         0.213 - 0.213 * s, 0.715 + 0.285 * s, 0.072 - 0.072 * s, 0,
+         0.213 - 0.213 * s, 0.715 - 0.715 * s, 0.072 + 0.928 * s, 0)
+    return im.convert("RGB", m)
+
+
+def render_edit(path: str, ops: dict):
+    """Applies the editor's steps to the full-size photo, in the order the preview shows them:
+    rotate (clockwise quarter turns), flip, crop (fractions of the turned photo), then light,
+    contrast and colour (matching the CSS brightness(), contrast() and saturate() filters)."""
+    from PIL import Image, ImageEnhance, ImageOps
+    im = Image.open(path)
+    info = {k: im.info[k] for k in ("icc_profile", "dpi") if k in im.info}
+    exif = im.getexif()
+    im = ImageOps.exif_transpose(im)
+    T = getattr(Image, "Transpose", Image)      # Pillow < 9.1 (Ubuntu 22.04) has the old names
+    turns = int(ops.get("rotate", 0)) // 90 % 4
+    if turns:
+        im = im.transpose([None, T.ROTATE_270, T.ROTATE_180, T.ROTATE_90][turns])
+    if ops.get("flipH"):
+        im = im.transpose(T.FLIP_LEFT_RIGHT)
+    if ops.get("flipV"):
+        im = im.transpose(T.FLIP_TOP_BOTTOM)
+    c = ops.get("crop")
+    if c:
+        W, H = im.size
+        x0 = max(0, min(W - 1, round(float(c["x"]) * W)))
+        y0 = max(0, min(H - 1, round(float(c["y"]) * H)))
+        x1 = max(x0 + 1, min(W, round((float(c["x"]) + float(c["w"])) * W)))
+        y1 = max(y0 + 1, min(H, round((float(c["y"]) + float(c["h"])) * H)))
+        if (x0, y0, x1, y1) != (0, 0, W, H):
+            im = im.crop((x0, y0, x1, y1))
+    b, k, s = (float(ops.get(n, 1)) for n in ("brightness", "contrast", "saturation"))
+    if abs(b - 1) > 1e-3 or abs(k - 1) > 1e-3 or abs(s - 1) > 1e-3:
+        alpha = im.getchannel("A") if im.mode in ("RGBA", "LA") or (im.mode == "P" and "transparency" in im.info) else None
+        im = im.convert("RGB")
+        if abs(b - 1) > 1e-3:
+            im = ImageEnhance.Brightness(im).enhance(b)
+        if abs(k - 1) > 1e-3:
+            lut = [max(0, min(255, round((v - 127.5) * k + 127.5))) for v in range(256)]
+            im = im.point(lut * 3)
+        if abs(s - 1) > 1e-3:
+            im = _saturate(im, s)
+        if alpha is not None:
+            im.putalpha(alpha)
+    if exif:
+        exif[0x0112] = 1          # the pixels are upright now
+        info["exif"] = exif.tobytes()
+    return im, info
+
+
+def save_edit(e: Entry, ops: dict, mode: str) -> str:
+    """Saves an edited photo. "copy" writes "name (edited).jpg" next to it; "replace" puts the
+    original in the Trash first, so it can always be restored. Returns the new file's path."""
+    ext = e.name.rsplit(".", 1)[-1].lower()
+    if ext not in EDITABLE:
+        raise ValueError("This kind of picture can't be edited here.")
+    im, info = render_edit(e.path, ops)
+    fmt = {"jpg": "JPEG", "jpeg": "JPEG", "png": "PNG", "webp": "WEBP", "bmp": "BMP"}[ext]
+    if fmt == "JPEG":
+        if im.mode not in ("RGB", "L"):
+            im = im.convert("RGB")
+        info.update(quality=95, subsampling=0, optimize=True)
+    elif fmt == "WEBP":
+        info.update(quality=95, method=4)
+    elif fmt == "BMP":
+        info.pop("exif", None)
+        info.pop("icc_profile", None)
+    st = os.stat(e.path)
+    folder, stem = os.path.dirname(e.path), e.name.rsplit(".", 1)[0]
+    if mode == "copy":
+        target, i = os.path.join(folder, f"{stem} (edited).{ext}"), 2
+        while os.path.exists(target):
+            target, i = os.path.join(folder, f"{stem} (edited {i}).{ext}"), i + 1
+        im.save(target, fmt, **info)
+        os.utime(target, (st.st_atime, st.st_mtime))      # sits right next to the original
+        return target
+    tmp = os.path.join(folder, f".{stem}.tonefer-edit.{ext}")
+    im.save(tmp, fmt, **info)
+    if not trash_file(e.path):
+        os.remove(tmp)
+        raise OSError("Couldn't move the original to the Trash, so nothing was changed.")
+    os.replace(tmp, e.path)
+    os.utime(e.path, (st.st_atime, st.st_mtime + 1))       # new mtime: the thumbnail is remade
+    return e.path

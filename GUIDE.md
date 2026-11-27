@@ -250,12 +250,39 @@ The **Gallery** tab in the laptop app (Ubuntu and Windows) shows every photo, vi
 
 - **View:** click a photo or video. Arrow keys or the scroll wheel go to the next one. Videos start playing at once; Space pauses.
 - **Delete:** press Delete in the viewer, or press **Select**, pick several (Shift-click selects a range) and **Move to Trash**. Files go to the system Trash or Recycle Bin, so they can be restored.
+- **Edit:** open a photo and press **Edit** (or <kbd>E</kbd>). Crop by dragging on the photo (Free, Original, 1:1, 4:3, 3:4, 16:9, 9:16), turn left or right, mirror or flip, and change light, contrast and colour. **Save as copy** keeps the original and writes `name (edited).jpg` next to it. **Replace original** puts the original in the Trash first, so it can always be restored. Edits are applied to the full-size photo and keep its date and camera details. Works for JPG, PNG, WebP and BMP.
 - **Send:** **Send to phone** offers the file to your phone without copying it.
 - **Files** lists documents, archives and music; clicking one opens it in its normal app.
 
 Photos are placed on the day they were **taken**: Tonefer reads the date stored inside each photo (and inside phone videos), or the date in names like `IMG_20241005_143022.jpg`. The first scan reads every file once and shows a live scanner while it works; the dates are remembered in `~/.tonefer/gallery-dates.json`, so later scans take a moment.
 
 Everything stays on the laptop. Thumbnails are cached in `~/.tonefer/thumbs`. Videos that the built-in player can't decode get an *Open in your video player* button; on Ubuntu, installing `gstreamer1.0-libav` lets most of them play inside Tonefer.
+
+## Phone backup: every photo and video onto the laptop
+
+The **Phone backup** tab copies everything off an Android phone over a USB cable in one go: Camera, Screenshots, WhatsApp (sent and received), Telegram, Instagram, Snapchat, Downloads, screen recordings, any other app folder and the memory card. You don't have to hunt through folders.
+
+**Once, on the laptop (Ubuntu):** `sudo apt install adb`. On Windows, download *Android SDK Platform-Tools* from developer.android.com and unzip it to `C:\platform-tools`.
+
+**Once, on the phone:**
+
+1. **Settings → About phone** → tap **Build number** seven times.
+2. **Settings → System → Developer options** → turn on **USB debugging**.
+3. Connect the cable, unlock the phone and tap **Allow** (tick *Always allow from this computer*).
+
+**Then:**
+
+1. **Scan the phone.** You get a table of how many photos and videos are in each place, their size, and how many are already on the laptop.
+2. Choose:
+   - **Copy to laptop.** The phone isn't changed. Run it again later and only new photos are copied.
+   - **Move to laptop (cut).** Each file is copied, then checked (same size and same MD5 checksum), and only then deleted from the phone. Anything that fails the check stays on the phone.
+3. Watch the progress bar, speed and time left. **Stop** is safe: the next run carries on where it stopped.
+
+Photos are saved in `~/Tonefer/Phone backup/<year>/<year>-<month>/` and appear in the Gallery straight away. **Change folder** puts them anywhere, such as an external drive (Tonefer checks there's enough space first). Two different photos with the same name are both kept (`name (2).jpg`). A list of every file, where it came from and where it went is kept in `Phone backup/.backup/manifest.csv`.
+
+Hidden folders, such as WhatsApp's `.Statuses`, are skipped unless you tick *Include hidden folders*. App caches (`Android/data`) and the phone's own recycle bin are always skipped.
+
+**Speed:** about 30–40 MB/s over USB, so roughly an hour for 100 GB. No cable? Android 11+ can use *Wireless debugging* (pair and connect in the same tab), but it's much slower.
 
 On Android, open the menu → **Gallery** for the same timeline of the phone's photos and videos. Tap one to open the reels-style viewer: swipe up for the next, videos play as soon as they appear. The **Files** tab lists documents, archives, music and APKs once you allow *All files access*. Deleted items go to the system trash.
 
